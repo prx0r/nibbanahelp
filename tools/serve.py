@@ -133,21 +133,18 @@ def page():
         up_by_day.setdefault(str(r.get("day", "?")), []).append(r)
     if up_by_day:
         for d in sorted(up_by_day, key=lambda x: int(x) if x.isdigit() else 0):
-            out.append(f"<p>day {d} uploads</p>")
             for r in up_by_day[d]:
                 flag = " [backfill]" if r.get("backfill") else ""
                 note = f" {r['note']}" if r.get("note") else ""
                 out.append(f"<p><a href=\"/files/{r['file']}\">{r['file']}"
                            f"</a>{flag} {r['uploaded_at']}{note}</p>")
     for day in sorted(days, key=int):
-        out.append(f"<p>day {day}</p>")
         for p, h, body in days[day]:
-            out.append(f"<p>{p.stem}</p>" + raw(body))
-    out.append("<p>open tensions</p>")
+            out.append(raw(body))
     for p in sorted((ROOT / "tensions").glob("*.md")):
         h, body = header(p)
         if h.get("status") == "open":
-            out.append(f"<p>{h.get('id', p.stem)}</p>" + raw(body))
+            out.append(raw(body))
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
             f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"

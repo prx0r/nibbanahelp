@@ -14,9 +14,17 @@ OUT = ROOT / "site" / "index.html"
 
 
 def raw(src: str) -> str:
-    # Exactly what was written, in a <pre>. Only three inline markers
-    # render: **bold**, __underline__, *italic*. Everything else literal.
-    return "<pre>" + inline3(html.escape(src)) + "</pre>"
+    # Exactly what was written, in a <pre>. Only four things render:
+    # **bold**, __underline__, *italic*, and # headings as bold.
+    # Everything else literal.
+    lines = []
+    for line in html.escape(src).splitlines():
+        m = re.match(r"^#{1,6}\s+(.*)", line)
+        if m:
+            lines.append(f"<strong>{inline3(m.group(1))}</strong>")
+        else:
+            lines.append(inline3(line))
+    return "<pre>" + "\n".join(lines) + "</pre>"
 
 
 def inline3(s: str) -> str:
@@ -61,16 +69,12 @@ def main():
 
     parts = []
     for day in sorted(days, key=int):
-        secs = [f"<p>day {day}</p>"]
         for p, h, body in days[day]:
-            secs.append(f"<p>{p.stem}</p>" + raw(body))
-        parts.append("\n".join(secs))
-    tsec = ["<p>open tensions</p>"]
+            parts.append(raw(body))
     for p, h, body in tensions:
         if h.get("status") != "open":
             continue
-        tsec.append(f"<p>{h.get('id', p.stem)}</p>" + raw(body))
-    parts.append("\n".join(tsec))
+        parts.append(raw(body))
     man = ROOT / "uploads" / "manifest.json"
     if man.is_file():
         try:
