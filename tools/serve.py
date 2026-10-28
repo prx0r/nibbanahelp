@@ -40,10 +40,13 @@ MANIFEST = UPLOADS / "manifest.json"
 MAX_UPLOAD = 50 * 1024 * 1024
 DAY1 = date(2026, 10, 28)
 
-CSS = ("body{background:#fff;color:#000;font-family:Georgia,serif;"
-       "max-width:38rem;margin:3rem auto;padding:0 1.2rem;line-height:1.7}"
+CSS = ("body{background:#fff;color:#000;"
+       "font-family:'Cormorant Garamond','Tiro Devanagari Sanskrit',Georgia,serif;"
+       "font-size:1.2rem;"
+       "max-width:38rem;margin:3rem auto;padding:0 1.2rem;line-height:1.8}"
        "h1{font-size:1.1rem;letter-spacing:.15em;text-transform:uppercase;"
        "border-bottom:1px solid #000;padding-bottom:.4rem;margin-top:3rem}"
+       "h2{font-weight:500}"
        "article{margin:2rem 0}.meta{font-size:.8rem;opacity:.6;"
        "font-family:monospace}a{color:#000}"
        "input[type=text]{width:100%;font-family:Georgia,serif;font-size:1rem;"
@@ -126,6 +129,7 @@ def page():
                        f"{md(body)}</article>")
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
+            "<link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Tiro+Devanagari+Sanskrit&display=swap' rel=stylesheet>"
             f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"
             + "".join(out) + "</body></html>")
 
