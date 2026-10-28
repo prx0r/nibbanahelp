@@ -13,46 +13,9 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
 
 
-def md(src: str) -> str:
-    out = []
-    para = []
-    def flush():
-        if para:
-            out.append("<p>" + " ".join(para) + "</p>")
-            para.clear()
-    for line in src.splitlines():
-        line = line.rstrip()
-        if not line.strip() or line.strip() == "---":
-            flush()
-            continue
-        m = re.match(r"^(#{1,3})\s+(.*)", line)
-        if m:
-            flush()
-            lvl = len(m.group(1))
-            out.append(f"<h{lvl}>{inline(m.group(2))}</h{lvl}>")
-            continue
-        if re.match(r"^[-*]\s+", line):
-            flush()
-            bullet = re.sub(r"^[-*]\s+", "", line)
-            out.append(f"<li>{inline(bullet)}</li>")
-            continue
-        if re.match(r"^\d+\.\s+", line):
-            flush()
-            numbered = re.sub(r"^\d+\.\s+", "", line)
-            out.append(f"<li>{inline(numbered)}</li>")
-            continue
-        para.append(inline(line))
-    flush()
-    return "\n".join(out)
-
-
-def inline(s: str) -> str:
-    s = html.escape(s)
-    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
-    s = re.sub(r"\*(.+?)\*", r"<em>\1</em>", s)
-    s = re.sub(r"`(.+?)`", r"<code>\1</code>", s)
-    s = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', s)
-    return s
+def raw(src: str) -> str:
+    # No formatting. Exactly what was written, in a <pre>.
+    return "<pre>" + html.escape(src) + "</pre>"
 
 
 def header(p: Path) -> dict:
@@ -90,22 +53,15 @@ def main():
 
     parts = []
     for day in sorted(days, key=int):
-        secs = [f"<h1>Day {day}</h1>"]
+        secs = [f"<p>day {day}</p>"]
         for p, h, body in days[day]:
-            kind = "essay" if p.parent.name == "essays" else "entry"
-            vis = h.get("visibility", "private")
-            au = f' · <a href="#">spoken</a>' if h.get("audio",
-                                                      "-") != "-" else ""
-            secs.append(card(f"{p.stem} ({kind}, {vis})",
-                             f"{p.relative_to(ROOT)}{au}", md(body)))
+            secs.append(f"<p>{p.stem}</p>" + raw(body))
         parts.append("\n".join(secs))
-    tsec = ["<h1>Open tensions</h1>"]
+    tsec = ["<p>open tensions</p>"]
     for p, h, body in tensions:
         if h.get("status") != "open":
             continue
-        tsec.append(card(f"{h.get('id', p.stem)}",
-                         f"{h.get('summary', '')} · {p.relative_to(ROOT)}",
-                         md(body)))
+        tsec.append(f"<p>{h.get('id', p.stem)}</p>" + raw(body))
     parts.append("\n".join(tsec))
     man = ROOT / "uploads" / "manifest.json"
     if man.is_file():
@@ -114,14 +70,11 @@ def main():
         except json.JSONDecodeError:
             rows = []
         if rows:
-            usec = ["<h1>Uploaded (upload time is the timestamp)</h1><ul>"]
+            usec = ["<p>uploaded</p>"]
             for r in rows:
                 flag = " [backfill]" if r.get("backfill") else ""
-                note = f" — {r['note']}" if r.get("note") else ""
-                usec.append(f"<li>day {r.get('day', '?')}: {r['file']}"
-                            f"{flag} <span class=meta>{r['uploaded_at']}"
-                            f"{note}</span></li>")
-            usec.append("</ul>")
+                usec.append(f"<p><a href=\"/files/{r['file']}\">{r['file']}"
+                            f"</a>{flag} {r['uploaded_at']}</p>")
             parts.append("\n".join(usec))
 
     OUT.parent.mkdir(exist_ok=True)
@@ -130,21 +83,13 @@ def main():
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
-<title>nibbanahelp — day by day</title>
+<title>nibbanahelp</title>
 <style>
   body {{ background: #fff; color: #000;
-         font-family: "Cormorant Garamond", "Tiro Devanagari Sanskrit", Georgia, serif;
-         font-size: 1.2rem;
-         max-width: 38rem; margin: 3rem auto; padding: 0 1.2rem;
-         line-height: 1.8; }}
-  h1 {{ font-size: 1.1rem; letter-spacing: .15em; text-transform: uppercase;
-       border-bottom: 1px solid #000; padding-bottom: .4rem; margin-top: 3rem; }}
-  h2 {{ font-weight: 500; }}
-  article {{ margin: 2rem 0; }}
-  .meta {{ font-size: .8rem; opacity: .6; font-family: monospace; }}
+         font-family: monospace;
+         max-width: 44rem; margin: 2rem auto; padding: 0 1rem; }}
   a {{ color: #000; }}
-  code {{ font-size: .85em; }}
+  pre {{ white-space: pre-wrap; font-family: monospace; }}
 </style>
 </head>
 <body>

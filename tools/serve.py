@@ -32,7 +32,7 @@ _site_spec = _ilu.spec_from_file_location(
     "nibsite", Path(__file__).resolve().parent / "site.py")
 _nibsite = _ilu.module_from_spec(_site_spec)
 _site_spec.loader.exec_module(_nibsite)
-header, md = _nibsite.header, _nibsite.md
+header, raw = _nibsite.header, _nibsite.raw
 
 ROOT = Path(__file__).resolve().parent.parent
 UPLOADS = ROOT / "uploads"
@@ -41,20 +41,15 @@ MAX_UPLOAD = 50 * 1024 * 1024
 DAY1 = date(2026, 10, 28)
 
 CSS = ("body{background:#fff;color:#000;"
-       "font-family:'Cormorant Garamond','Tiro Devanagari Sanskrit',Georgia,serif;"
-       "font-size:1.2rem;"
-       "max-width:38rem;margin:3rem auto;padding:0 1.2rem;line-height:1.8}"
-       "h1{font-size:1.1rem;letter-spacing:.15em;text-transform:uppercase;"
-       "border-bottom:1px solid #000;padding-bottom:.4rem;margin-top:3rem}"
-       "h2{font-weight:500}"
-       "article{margin:2rem 0}.meta{font-size:.8rem;opacity:.6;"
-       "font-family:monospace}a{color:#000}"
-       "input[type=text]{width:100%;font-family:Georgia,serif;font-size:1rem;"
+       "font-family:monospace;"
+       "max-width:44rem;margin:2rem auto;padding:0 1rem}"
+       "a{color:#000}"
+       "pre{white-space:pre-wrap;font-family:monospace}"
+       "input[type=text]{width:100%;font-family:monospace;font-size:1rem;"
        "border:1px solid #000;padding:.5rem;background:#fff;color:#000}"
        "button{background:#000;color:#fff;border:0;padding:.6rem 1.2rem;"
        "font-size:1rem;cursor:pointer}form{margin:2rem 0}"
-       "label{display:block;margin:1rem 0 .3rem}.backfill{color:#000;"
-       "border:1px solid #000;padding:0 .4rem;font-size:.75rem}")
+       "label{display:block;margin:1rem 0 .3rem}")
 
 
 def manifest() -> list:
@@ -84,52 +79,35 @@ def page():
             h, body = header(p)
             if "day" in h:
                 days.setdefault(h["day"], []).append((p, h, body))
-    out = ["<h1>nibbanahelp — day by day</h1>",
-           "<p class=meta>shared second brain of diaries. public by "
-           "practice. upload time is the timestamp — old material flagged "
-           "backfill.</p>",
-           "<h1>Upload</h1>",
+    out = ["<p>nibbanahelp</p>",
            "<form method=post action=/upload enctype=multipart/form-data>"
            "<input type=file name=file><br>"
            "<label><input type=checkbox name=backfill value=1> "
-           "backfill — older material (diary notes from before)</label>"
-           "<label>Note (optional: when is it from?)"
-           " <input type=text name=note></label><br>"
+           "backfill</label>"
+           "<label>note <input type=text name=note></label><br>"
            "<button>upload</button></form>"]
     up_by_day = {}
     for r in manifest():
         up_by_day.setdefault(str(r.get("day", "?")), []).append(r)
     if up_by_day:
-        out.append("<h1>Uploaded</h1>")
         for d in sorted(up_by_day, key=lambda x: int(x) if x.isdigit() else 0):
-            out.append(f"<h1>Day {d}</h1><ul>")
+            out.append(f"<p>day {d} uploads</p>")
             for r in up_by_day[d]:
-                flag = (" <span class=backfill>backfill</span>"
-                        if r.get("backfill") else "")
-                note = f" — {r['note']}" if r.get("note") else ""
-                out.append(f"<li><a href=\"/files/{r['file']}\">{r['file']}"
-                           f"</a>{flag} <span class=meta>{r['uploaded_at']}"
-                           f"{note}</span></li>")
-            out.append("</ul>")
+                flag = " [backfill]" if r.get("backfill") else ""
+                note = f" {r['note']}" if r.get("note") else ""
+                out.append(f"<p><a href=\"/files/{r['file']}\">{r['file']}"
+                           f"</a>{flag} {r['uploaded_at']}{note}</p>")
     for day in sorted(days, key=int):
-        out.append(f"<h1>Day {day}</h1>")
+        out.append(f"<p>day {day}</p>")
         for p, h, body in days[day]:
-            kind = "essay" if p.parent.name == "essays" else "entry"
-            au = (f' · <a href="/files/{h["audio"]}">spoken</a>'
-                  if h.get("audio", "-") not in ("-", "") else "")
-            out.append(f"<article><h2>{p.stem}</h2>"
-                       f"<div class=meta>{kind} · {h.get('visibility')}{au}"
-                       f"</div>{md(body)}</article>")
-    out.append("<h1>Open tensions</h1>")
+            out.append(f"<p>{p.stem}</p>" + raw(body))
+    out.append("<p>open tensions</p>")
     for p in sorted((ROOT / "tensions").glob("*.md")):
         h, body = header(p)
         if h.get("status") == "open":
-            out.append(f"<article><h2>{h.get('id', p.stem)}</h2>"
-                       f"<div class=meta>{h.get('summary', '')}</div>"
-                       f"{md(body)}</article>")
+            out.append(f"<p>{h.get('id', p.stem)}</p>" + raw(body))
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
-            "<link href='https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Tiro+Devanagari+Sanskrit&display=swap' rel=stylesheet>"
             f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"
             + "".join(out) + "</body></html>")
 

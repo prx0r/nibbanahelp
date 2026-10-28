@@ -30,6 +30,10 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Advice records and session transcripts are verbatim and immutable.
 - The relay never generates advice: match + relay with provenance.
   Abhayagiri material is link-first only (see `corpus/abhayagiri-links.md`).
+- `uploads/` is the inbox. When notebook pages get transcribed into
+  entries/tensions, link back to the source upload. Process oldest first.
+- Frontend renders raw: no markdown conversion, no font loads, no meta
+  chrome. Content in `<pre>`, monospace, white. Never add styling.
 - Tools are stdlib (+numpy/sklearn where noted). No new deps without asking.
 - Commit messages: lowercase, short. Push to origin main when asked or when
   a unit of work completes.
