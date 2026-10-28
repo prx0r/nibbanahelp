@@ -5,6 +5,7 @@
   python3 -m http.server -d site   (or just open the file)
 """
 import html
+import json
 import re
 from pathlib import Path
 
@@ -106,6 +107,22 @@ def main():
                          f"{h.get('summary', '')} · {p.relative_to(ROOT)}",
                          md(body)))
     parts.append("\n".join(tsec))
+    man = ROOT / "uploads" / "manifest.json"
+    if man.is_file():
+        try:
+            rows = json.loads(man.read_text())
+        except json.JSONDecodeError:
+            rows = []
+        if rows:
+            usec = ["<h1>Uploaded (upload time is the timestamp)</h1><ul>"]
+            for r in rows:
+                flag = " [backfill]" if r.get("backfill") else ""
+                note = f" — {r['note']}" if r.get("note") else ""
+                usec.append(f"<li>day {r.get('day', '?')}: {r['file']}"
+                            f"{flag} <span class=meta>{r['uploaded_at']}"
+                            f"{note}</span></li>")
+            usec.append("</ul>")
+            parts.append("\n".join(usec))
 
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(f"""<!doctype html>

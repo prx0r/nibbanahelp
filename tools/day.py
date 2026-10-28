@@ -80,6 +80,25 @@ def main(argv):
                       f"\"{r['to_friend'][:80]}...\"")
     if not found:
         print("- (none)")
+    print()
+
+    print("## uploads (upload time is the timestamp)")
+    man = ROOT / "uploads" / "manifest.json"
+    ufound = False
+    if man.is_file():
+        try:
+            rows = json.loads(man.read_text())
+        except json.JSONDecodeError:
+            rows = []
+        for r in rows:
+            if str(r.get("day")) != day:
+                continue
+            ufound = True
+            flag = " [backfill — older material]" if r.get("backfill") else ""
+            note = f" ({r['note']})" if r.get("note") else ""
+            print(f"- uploads/{r['file']}{flag} @ {r['uploaded_at']}{note}")
+    if not ufound:
+        print("- (none)")
     return 0
 
 

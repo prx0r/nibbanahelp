@@ -2,9 +2,15 @@
 
 ## Start a diary
 
-1. Copy `entries/_template.md` to `entries/day-01-<your-theme>.md`.
-2. Write the truth. Numbers, substances, shames — the specifics are the point.
-3. Log your tensions in `tensions/` (one file each, see `schema/tension.md`).
+Writing happens in your notebook. The repo is the shared shelf:
+
+1. Upload files via the frontend (`python3 tools/serve.py`) — or drop them
+   in `uploads/` directly. Anything: photos of pages, audio, markdown.
+2. Upload time IS the timestamp. There is no backfilling the timeline.
+3. Old material is welcome but must be flagged `backfill` (tick the box,
+   optionally note when it's from). Backfill keeps its upload day but reads
+   as older — honest history, honest order.
+4. Log your tensions in `tensions/` (one file each, see `schema/tension.md`).
 
 ## Rules
 
