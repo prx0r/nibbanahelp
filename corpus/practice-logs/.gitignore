@@ -1,0 +1,37 @@
+# ---------------------------------------------------------------------------
+# Raw scraped practice logs — intentionally NOT published.
+# These are personal, first-person meditation logs from public forums.
+# They are excluded from the repo for privacy; the pipeline in RUNBOOK.md
+# regenerates them (scrape) and logs.json holds the labelled, published data.
+# ---------------------------------------------------------------------------
+/Data/
+
+# Scratch / working output (per-batch labelling parts, audit groups, staged bundles)
+/_to_delete/
+/Tools/label_parts/
+/Tools/audit_groups/
+/Tools/chris_marti_labels.json
+pl_bundle.zip
+
+# Editor / backup copies
+*.bak
+*.bak-*
+index.html.bak*
+
+# Run-specific session notes (working state, not part of the published project)
+/PROGRESS.txt
+/deletions.txt
+/PIPELINE_ISSUE.md
+
+# Privacy review queue (RUNBOOK.md §12). NOT published: it quotes verbatim the exact
+# passages whose authors may not want them reproduced — committing it would publish
+# the very content the opt-out screen exists to withhold. Also names the logs and
+# authors under review, which is itself the sensitive part.
+/Tools/review_queue.txt
+
+# Python / OS cruft
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db
