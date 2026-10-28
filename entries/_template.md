@@ -1,3 +1,6 @@
+day: 1
+visibility: private
+---
 # Day {{N}} of attaining nibbana
 
 - Date:

@@ -1,3 +1,8 @@
+day: 1
+visibility: private
+voice: -
+audio: -
+---
 # What nibbana is like
 
 Some alien process with stamina bar inside head.

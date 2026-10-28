@@ -24,3 +24,9 @@ See `research/ai-ready-datasets.md` for corpora + binding relay principles.
 
 Other people's diaries + tensions accumulate. The corpus of real attempts
 becomes the training context no textbook can replace.
+
+## 5. Public / private + essays spoken + days
+
+Attain in public or in private per item (`visibility:`). Distil diaries into
+speakable essays, record them (own voice or TTS), pin everything to days —
+`tools/day.py` bundles a day's entries, essays, tensions, and echoed advice.

@@ -45,9 +45,9 @@ antidotes:
 
 seed_observations:
   - { behaviour: goodbye-coffee + fed-the-wolf-logic, roots: [lobha, moha], source: entries/day-01-attaining-nibbana.md, status: confirmed-local }
-  - { behaviour: autopilot-cake-eating, roots: [lobha, moha], source: entries/day-01-what-nibbana-is-like.md, status: confirmed-local }
-  - { behaviour: morning-phone-pull, roots: [lobha], source: entries/day-01-what-nibbana-is-like.md, status: confirmed-local }
+  - { behaviour: autopilot-cake-eating, roots: [lobha, moha], source: essays/day-01-what-nibbana-is-like.md, status: confirmed-local }
+  - { behaviour: morning-phone-pull, roots: [lobha], source: essays/day-01-what-nibbana-is-like.md, status: confirmed-local }
   - { behaviour: shame-armouring, roots: [dosa, moha], source: entries/day-01-attaining-nibbana.md, status: confirmed-local }
   - { behaviour: dharma-content-instead-of-earning, roots: [lobha], source: entries/day-01-attaining-nibbana.md, status: candidate }
-  - { behaviour: struggle-against-pull (steam), roots: [lobha, dosa], source: entries/day-01-what-nibbana-is-like.md, status: candidate }
+  - { behaviour: struggle-against-pull (steam), roots: [lobha, dosa], source: essays/day-01-what-nibbana-is-like.md, status: candidate }
 ```

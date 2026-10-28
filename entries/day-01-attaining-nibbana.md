@@ -1,3 +1,6 @@
+day: 1
+visibility: private
+---
 # Day 1 of attaining nibbana
 
 - Date: 2026-10-28
