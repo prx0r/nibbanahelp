@@ -17,6 +17,7 @@ flagged, so readers know the content is older than its position.
 WARNING: no auth. Localhost only unless behind login. Anyone with the URL
 can upload to the repo.
 """
+import html
 import json
 import re
 import subprocess
@@ -42,11 +43,14 @@ DAY1 = date(2026, 10, 28)
 
 CSS = ("body{background:#fff;color:#000;"
        "font-family:monospace;"
-       "max-width:44rem;margin:2rem auto;padding:0 1rem}"
+       "margin:0;padding:0 1rem}"
        "a{color:#000}"
        "pre{white-space:pre-wrap;font-family:monospace}"
        "input[type=text]{width:100%;font-family:monospace;font-size:1rem;"
        "border:1px solid #000;padding:.5rem;background:#fff;color:#000}"
+       "textarea{width:100%;box-sizing:border-box;font-family:monospace;"
+       "font-size:1rem;border:1px solid #000;padding:.5rem;background:#fff;"
+       "color:#000}"
        "button{background:#000;color:#fff;border:0;padding:.6rem 1.2rem;"
        "font-size:1rem;cursor:pointer}form{margin:2rem 0}"
        "label{display:block;margin:1rem 0 .3rem}")
@@ -70,6 +74,34 @@ def day_of(when: date) -> int:
     return max(1, (when - DAY1).days + 1)
 
 
+def entry_files():
+    out = []
+    for p in sorted(ROOT.glob("entries/*.md")):
+        if p.name.startswith("_"):
+            continue
+        h, _ = header(p)
+        if h.get("day", "").isdigit():
+            out.append((int(h["day"]), p))
+    return sorted(out)
+
+
+def today_file():
+    files = entry_files()
+    if not files:
+        return None, None
+    top = max(d for d, _ in files)
+    cands = [p for d, p in files if d == top]
+    cands.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return top, cands[0]
+
+
+def split_body(text: str):
+    if "---" in text:
+        head, body = text.split("---", 1)
+        return head + "---\n", body.lstrip("\n")
+    return "", text
+
+
 def page():
     days = {}
     for pat in ("entries/*.md", "essays/*.md"):
@@ -86,6 +118,16 @@ def page():
            "backfill</label>"
            "<label>note <input type=text name=note></label><br>"
            "<button>upload</button></form>"]
+    td, tf = today_file()
+    if tf is not None:
+        _head, tbody = split_body(tf.read_text())
+        out.append(f"<p>day {td} — today, edit below</p>"
+                   "<form method=post action=/save-today>"
+                   f"<textarea name=body rows=30 style='width:100%'>"
+                   f"{html.escape(tbody)}</textarea><br>"
+                   "<button>save today</button></form>"
+                   "<form method=post action=/new-day>"
+                   "<button>submit — start a new day</button></form>")
     up_by_day = {}
     for r in manifest():
         up_by_day.setdefault(str(r.get("day", "?")), []).append(r)
@@ -155,6 +197,34 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         ctype = self.headers.get("Content-Type", "")
         raw = self.rfile.read(n) if n else b""
+        if self.path == "/save-today" and n and "urlencoded" in ctype:
+            from urllib.parse import parse_qs
+            f = parse_qs(raw.decode())
+            body = (f.get("body", [""])[0] or "").rstrip() + "\n"
+            td, tf = today_file()
+            if tf is None:
+                return self._send("no today yet", 400)
+            head, _ = split_body(tf.read_text())
+            tf.write_text(head + body)
+            git("add", str(tf.relative_to(ROOT)))
+            git("commit", "-q", "-m", f"diary: day {td} edit")
+            code, _ = git("push", "-q", "origin", "main")
+            extra = "" if code == 0 else " (committed locally)"
+            self._send(f"<p>saved day {td}{extra}</p>"
+                       "<p><a href='/'>back</a></p>")
+            return
+        if self.path == "/new-day" and (not n or "urlencoded" in ctype):
+            files = entry_files()
+            nxt = max([d for d, _ in files] + [0]) + 1
+            dest = ROOT / "entries" / f"day-{nxt:02d}.md"
+            dest.write_text(f"day: {nxt}\nvisibility: public\n---\n")
+            git("add", str(dest.relative_to(ROOT)))
+            git("commit", "-q", "-m", f"new day {nxt}")
+            code, _ = git("push", "-q", "origin", "main")
+            extra = "" if code == 0 else " (committed locally)"
+            self._send(f"<p>day {nxt} open{extra}</p>"
+                       "<p><a href='/'>back</a></p>")
+            return
         if self.path != "/upload" or not n or "multipart" not in ctype:
             return self._send("nothing here", 404, "text/plain")
         bm = re.search(r"boundary=([^\s;]+)", ctype)

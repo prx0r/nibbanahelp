@@ -95,7 +95,7 @@ def main():
 <style>
   body {{ background: #fff; color: #000;
          font-family: monospace;
-         max-width: 44rem; margin: 2rem auto; padding: 0 1rem; }}
+         margin: 0; padding: 0 1rem; }}
   a {{ color: #000; }}
   pre {{ white-space: pre-wrap; font-family: monospace; }}
 </style>

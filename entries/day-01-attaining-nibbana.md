@@ -3,10 +3,6 @@ visibility: public
 ---
 # Day 1 of attaining nibbana
 
-- Date: 2026-10-28
-- Diarist: prx0r
-- Mood: raw
-
 ## Current tensions
 
 ### Debt
