@@ -1,5 +1,5 @@
 day: 1
-visibility: private
+visibility: public
 ---
 # Day 1 of attaining nibbana
 

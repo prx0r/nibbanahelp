@@ -1,4 +1,5 @@
 id: coffee-addiction
+visibility: public
 diarist: prx0r
 opened: 2026-10-28
 status: open

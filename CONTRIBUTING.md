@@ -15,10 +15,10 @@
 
 ## Public or private
 
-- Default `visibility: private` — stays in the repo, never published.
-- `visibility: public` = the diarist clears it for publishing (site, readings).
-  Only the diarist flips their own material. An essay is only public if every
-  person named in it consents.
+Everything public is the practice itself. No names needed — a handle or
+nothing. `visibility: public` is the norm: entries, essays, tensions.
+`visibility: private` exists for material not yet ready; flip it when it is.
+An essay is only public if every person named in it consents.
 
 ## Essays → speech → days
 

@@ -1,5 +1,5 @@
 day: 1
-visibility: private
+visibility: public
 voice: -
 audio: -
 ---

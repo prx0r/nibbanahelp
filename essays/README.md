@@ -21,10 +21,9 @@ voice: own | tts:<engine>
 audio: audio/day-01-what-nibbana-is-like.mp3   # relative to repo root
 ```
 
-- `visibility: private` = never leaves the repo. Default. The day-01
-  material stays private until the diarist flips it.
-- `visibility: public` = cleared for publishing (site, readings, sharing).
-  Only the diarist flips their own.
+- `visibility: public` is the norm — publishing is part of the practice.
+  `visibility: private` = not yet ready; stays in the repo until flipped.
+  No names needed. Only the diarist flips their own.
 - Spoken audio lives in `audio/` locally; mirrored to R2 under
   `nibbanahelp/audio/`. Text is canonical — audio is the same essay aloud.
 
