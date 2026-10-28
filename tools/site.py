@@ -14,8 +14,16 @@ OUT = ROOT / "site" / "index.html"
 
 
 def raw(src: str) -> str:
-    # No formatting. Exactly what was written, in a <pre>.
-    return "<pre>" + html.escape(src) + "</pre>"
+    # Exactly what was written, in a <pre>. Only three inline markers
+    # render: **bold**, __underline__, *italic*. Everything else literal.
+    return "<pre>" + inline3(html.escape(src)) + "</pre>"
+
+
+def inline3(s: str) -> str:
+    s = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = re.sub(r"__(.+?)__", r"<u>\1</u>", s)
+    s = re.sub(r"\*([^*\n]+)\*", r"<em>\1</em>", s)
+    return s
 
 
 def header(p: Path) -> dict:
