@@ -14,13 +14,11 @@ Full Abhidhamma layer underneath the simple roots view — cetasikas, process,
 conditionality — for those who want precision. Simple by default, Abhidhamma
 one level down.
 
-## 3. AI chat that actually helps
+## 3. AI chat that relays, never advises
 
-A chat harness (simple pi harness + fojin MCP over the canon) that:
-
-- helps a diarist **define their behaviours** precisely (which root? what pattern?),
-- grounds guidance in both the canon and the repo's real journey corpus,
-- improves as the database of journeys grows.
+Retrieval-only. The AI matches your tension to lived tensions + teacher
+answers and relays them verbatim with links — zero generated advice.
+See `research/ai-ready-datasets.md` for corpora + binding relay principles.
 
 ## 4. Community journeys
 
