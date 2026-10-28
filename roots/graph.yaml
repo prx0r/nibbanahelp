@@ -1,0 +1,53 @@
+# Machine-readable dependency graph (v1)
+
+AI: load this + `roots/*.md` as context. Candidate edges need diary evidence
+before promotion to confirmed.
+
+```yaml
+roots:
+  lobha:
+    english: greed
+    canon: "Lobho akusalamūlaṁ (AN 3.69)"
+    entity: green entity
+    feeds_on: delight
+    demands: more-next-time
+    punishes_unfed: restlessness/pull/itch
+    weakens_by: [non-feeding, replacement-ladder]
+    cittas: 8 lobha-mula (feeling x prompted x view)
+    always_coarising: [moha]
+  dosa:
+    english: hatred/aversion
+    canon: "Doso akusalamūlaṁ (AN 3.69)"
+    feeds_on: pushing-away
+    demands: avoidance/armouring/numbing
+    weakens_by: [non-feeding, allowing-presence]
+    cittas: 2 dosa-mula (prompted/unprompted, with patigha)
+    always_coarising: [moha]
+  moha:
+    english: delusion
+    canon: "Moho akusalamūlaṁ (AN 3.69)"
+    feeds_on: not-seeing
+    trick: operates-by-cover
+    universal: present-in-all-12-akusala-cittas
+    weakens_by: [clear-seeing, discernment]
+    cittas: 2 moha-mula (doubt / restlessness)
+
+mechanics:
+  javana: 7 impulsion moments per process; kusala or akusala
+  asevana: repetition-condition — each javana feeds the next
+  implication: delight-now builds pull-later; unfed rounds weaken pull
+
+antidotes:
+  alobha: { canon: "Alobho kusalamūlaṁ (AN 3.69)", grown_by: generosity/contentment }
+  adosa:  { canon: "Adoso kusalamūlaṁ (AN 3.69)", grown_by: allowing-presence/metta }
+  amoha:  { canon: "Amoho kusalamūlaṁ (AN 3.69)", grown_by: clear-seeing/discernment }
+  replacement_ladder_example: [whole-slice, three-quarters, shared-chunk, half, flapjack, banana, nothing, stop-showing-up]
+
+seed_observations:
+  - { behaviour: goodbye-coffee + fed-the-wolf-logic, roots: [lobha, moha], source: entries/day-01-attaining-nibbana.md, status: confirmed-local }
+  - { behaviour: autopilot-cake-eating, roots: [lobha, moha], source: entries/day-01-what-nibbana-is-like.md, status: confirmed-local }
+  - { behaviour: morning-phone-pull, roots: [lobha], source: entries/day-01-what-nibbana-is-like.md, status: confirmed-local }
+  - { behaviour: shame-armouring, roots: [dosa, moha], source: entries/day-01-attaining-nibbana.md, status: confirmed-local }
+  - { behaviour: dharma-content-instead-of-earning, roots: [lobha], source: entries/day-01-attaining-nibbana.md, status: candidate }
+  - { behaviour: struggle-against-pull (steam), roots: [lobha, dosa], source: entries/day-01-what-nibbana-is-like.md, status: candidate }
+```
