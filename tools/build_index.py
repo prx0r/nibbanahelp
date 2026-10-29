@@ -160,6 +160,10 @@ def collect():
                               "url": f"tomnotes/{name}",
                               "themes": [],
                               "text": ch[:2000]})
+    # 5. own bank: tomnotes diaries, essays, prior chats (your words first)
+    from ingest_hxrmxs import collect_hxrmxs
+    for it in collect_hxrmxs():
+        items.append(it)
     return [i for i in items if i["text"].strip()]
 
 

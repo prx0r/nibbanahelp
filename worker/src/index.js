@@ -185,10 +185,11 @@ async function matchPassages(env, query, k = 5) {
     const k = c.kind || "";
     if (k === "own-tension") return "anchor";
     if (k === "lived-log") return "lived";
+    if (k === "dialogue") return "dialogue";
     if (k === "canon" || k === "roots-doc" || k === "graph") return "lineage";
     return "ownpast";
   };
-  const slots = { anchor: 1, lived: 3, lineage: 1, ownpast: 1 };
+  const slots = { anchor: 1, lived: 3, dialogue: 2, lineage: 1, ownpast: 1 };
   const seen = new Set();
   const out = [];
   for (const c of ranked) {

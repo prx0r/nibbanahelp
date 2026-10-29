@@ -265,11 +265,14 @@ class H(BaseHTTPRequestHandler):
                         return "anchor"
                     if k == "lived-log":
                         return "lived"
+                    if k == "dialogue":
+                        return "dialogue"
                     if k in ("canon", "roots-doc"):
                         return "lineage"
                     return "ownpast"
                 _ranked = [_cands[i] for i in _rrorder if 0 <= i < len(_cands)]
-                _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1}
+                _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1,
+                             "dialogue": 2}
                 _seen, relay, sources = set(), [], []
                 for _c in _ranked:
                     _t = _tier(_c)
