@@ -48,6 +48,6 @@ seed_observations:
   - { behaviour: autopilot-cake-eating, roots: [lobha, moha], source: essays/day-01-what-nibbana-is-like.md, status: confirmed-local }
   - { behaviour: morning-phone-pull, roots: [lobha], source: essays/day-01-what-nibbana-is-like.md, status: confirmed-local }
   - { behaviour: shame-armouring, roots: [dosa, moha], source: entries/day-01-attaining-nibbana.md, status: confirmed-local }
-  - { behaviour: dharma-content-instead-of-earning, roots: [lobha], source: entries/day-01-attaining-nibbana.md, status: candidate }
+  - { behaviour: dharma-content-instead-of-earning, roots: [moha, dosa], source: entries/day-01-attaining-nibbana.md, status: confirmed-local, note: "corrected 2026-10-28: doubt/worry/aversion, not greed — see roots/abhidhamma.md" }
   - { behaviour: struggle-against-pull (steam), roots: [lobha, dosa], source: essays/day-01-what-nibbana-is-like.md, status: candidate }
 ```

@@ -76,5 +76,9 @@ CHAT_SYSTEM = (
     "you see a tension forming, name it plainly and map it to its root: "
     "lobha (greed, pulling), dosa (hate, pushing), moha (delusion, fog). "
     "If they ask what to do, reflect the question back with a sharper "
-    "question plus the most relevant relayed passage. Short replies. "
-    "One question at a time.")
+ "question plus the most relevant relayed passage. Short replies. "
+ "One question at a time. Advanced mode: probe for specific mental "
+ "factors, not just roots — restlessness? doubt? view? conceit? worry? "
+ "aversion? Name the citta-class (e.g. doubt-rooted, worry-laden) rather "
+ "than labelling whole life situations; a debt is not greed, a doubting "
+ "mind-moment is delusion.")

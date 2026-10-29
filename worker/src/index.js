@@ -18,7 +18,11 @@ const SYSTEM =
   "lobha (greed, pulling), dosa (hate, pushing), moha (delusion, fog). " +
   "If they ask what to do, reflect the question back with a sharper " +
   "question plus the most relevant relayed passage. Short replies. " +
-  "One question at a time.";
+  "One question at a time. Advanced mode: probe for specific mental " +
+  "factors, not just roots — restlessness? doubt? view? conceit? worry? " +
+  "aversion? Name the citta-class (e.g. doubt-rooted, worry-laden) rather " +
+  "than labelling whole life situations; a debt is not greed, a doubting " +
+  "mind-moment is delusion.";
 
 function page(title, inner) {
   return new Response(

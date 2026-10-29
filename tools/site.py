@@ -460,8 +460,8 @@ def main():
         "<meta name=viewport content='width=device-width,initial-scale=1'>"
         "<title>nibbanahelp vis</title><style>"
         "body{background:#fff;color:#000;font-family:monospace;"
-        "margin:0;padding:0 1rem;max-width:60rem}"
-        "a{color:#000}</style></head><body>"
+        "margin:0 auto;padding:0 1rem;max-width:60rem;text-align:center}"
+        "a{color:#000}svg{display:inline-block}</style></head><body>"
         "<p><a href='/'>diary</a> · <a href='/chat'>chat</a></p>"
         + vis_body + "</body></html>")
     print("wrote site/vis.html")
