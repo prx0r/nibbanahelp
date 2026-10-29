@@ -55,8 +55,9 @@ for (const f of readdirSync(join(root, "tensions"))) {
   const text = readFileSync(join(root, "tensions", f), "utf8");
   const head = text.split("---")[0];
   const get = (k) => (head.match(new RegExp(`^${k}:\\s*(.+)$`, "m")) || [])[1] || "";
-  const body = (text.split("---")[1] || "").trim().slice(0, 400);
-  context += `- ${get("id")} [${get("status")}] roots=${get("roots")} :: ${get("summary")}\n  ${body}\n`;
+  const body = text.split("---")[1].trim();
+  const clipped = body.length > 900 ? body.slice(0, 300) + "\n[...]\n" + body.slice(-500) : body.slice(0, 900);
+  context += `- ${get("id")} [${get("status")}] roots=${get("roots")} :: ${get("summary")}\n  ${clipped}\n`;
 }
 context += "\nDIARY (verbatim, newest last):\n";
 for (const sub of ["entries", "essays"]) {
@@ -75,7 +76,7 @@ for (const f of ["greed-lobha.md", "hatred-dosa.md", "delusion-moha.md", "abhidh
 }
 writeFileSync(
   join(dir, "src", "context.js"),
-  "export default " + JSON.stringify(context.slice(0, 6000)) + ";\n"
+  "export default " + JSON.stringify(context.slice(0, 8000)) + ";\n"
 );
 
 // static pages (built by tools/site.py)
