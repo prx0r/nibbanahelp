@@ -307,11 +307,14 @@ def sidebar(days, link_uploads):
             kids.append(f"<a href=\"#\" data-show=\"d{day}-s{n}\">"
                         f"{ek or 'essay'}</a>")
         for r in d["uploads"]:
-            kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
-                        f"{ukind(r['file'])}</a>")
+            kind = r.get("kind") or ukind(r["file"])
+            kids.append(f"{kind} "
+                        f"<a href=\"{link_uploads(r['file'])}\">"
+                        f"{r['file']}</a>")
         s.append(f"<button class=daybox onclick=\"t('k{day}')\">{day}</button>"
                  f"<div id=\"k{day}\">"
-                 + "<br>".join(kids) + "</div>")
+                 + "<br>".join(kids) + "</div>"
+                 + f"<p><a href=\"#\" onclick=\"up({day});return false\">+</a></p>")
     s.append("</div>")
     return "\n".join(s)
 
