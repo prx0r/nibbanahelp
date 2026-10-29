@@ -56,6 +56,24 @@ unwholesome impulsion: bethupton.com/resources-and-tables) are the field
 guides. The AI's probing questions should hunt **factors**, not roots:
 restlessness? doubt? view? conceit? worry? — then name the citta-class.
 
+## Circumstance vs affliction (locked)
+
+The debt is real. The mental affliction it incurs is something else
+entirely. Never conflate them:
+- **Circumstance** (debt, bills, body, weather): to be handled
+  practically. Right action here is ordinary and honourable — figure
+  out a way to make money and sustain oneself (Right Livelihood,
+  AN 4.62's debtlessness as lay happiness).
+- **Affliction** (doubt, worry, aversion, conceit about the
+  circumstance): to be discerned, not obeyed and not "solved".
+  This is where the path happens — inside the circumstance, never
+  after it.
+
+Mixing them up produces both errors at once: spiritual bypassing
+("I shouldn't care about money, I'm practicing") and worldly
+drowning ("I can't practice until I'm solvent"). The split resolves
+both: handle the money, practice the mind, same day.
+
 ## How this changes the repo
 
 - Tensions keep a `roots:` tag (coarse routing for vis + matching).
