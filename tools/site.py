@@ -341,8 +341,9 @@ PAGE = """<!doctype html>
   #wrap {{ display: flex; }}
   #nav {{ flex-shrink: 0; padding-top: 1rem; padding-right: {gap};
     font-size: .8rem; }}
-  #nav .daybox {{ display: block; width: 2.2rem; height: 2.2rem; line-height: 2.2rem;
-    text-align: center; background: #fff; color: #000; border: 1px solid #000;
+  #nav .daybox {{ display: flex; align-items: center; justify-content: center;
+    width: 2.2rem; height: 2.2rem;
+    background: #fff; color: #000; border: 1px solid #000;
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; padding: 0; }}
   #nav div {{ margin-bottom: .6rem; }}
