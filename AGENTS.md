@@ -35,6 +35,11 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Frontend renders raw: no markdown conversion, no font loads, no meta
   chrome. Content in `<pre>`, monospace, white. Never add styling.
 - `motto.txt`: max 5 lines, newest last (darkest). Editable like everything.
+- VOICE RULE (absolute, user-set): the diarist's words are ONLY entries/*,
+  essays/*, tensions/* bodies, motto.txt, advice to_friend, chat user-turns.
+  Summaries, labels, schema text, graph descriptions, templates, and anything
+  generated are NEVER presented as theirs. When in doubt about a line's
+  origin, remove it and ask — never cement it.
 - Relay index: `tools/build_index.py` embeds with bge-m3 into
   `corpus/vectors.json` + `index.json`, then upload both to R2 under
   `relay/` (the live chat reads them from there). Re-run on corpus change.
