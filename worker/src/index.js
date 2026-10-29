@@ -129,12 +129,15 @@ async function matchPassages(env, query, k = 5) {
   if (!items.length) return [];
   const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
   const q = emb.data ? emb.data[0] : emb.result.data[0];
-  const BOOST = { "own-tension": 1.35, "own-chat": 1.25, "canon": 1.1 };
+  const BOOST = { "own-tension": 1.35, "own-notes": 1.3, "own-chat": 1.25, "canon": 1.1 };
+  const raw = {};
   const scored = [];
   for (const item of items) {
     const v = vecs[item.id];
     if (!v) continue;
-    scored.push([cosine(q, v) * (BOOST[item.kind] || 1), item]);
+    const s = cosine(q, v);
+    raw[item.id] = s;
+    scored.push([s * (BOOST[item.kind] || 1), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
   let cands = scored.slice(0, 20).map(([, item]) => item);
@@ -155,6 +158,7 @@ async function matchPassages(env, query, k = 5) {
         seen.add(stemKey(pid));
         const p = dharmaById[pid];
         if (!p) continue;
+        raw[pid] = 0.5;
         cands.push({ id: pid, kind: "graph", label: p.summary || p.text_id || pid,
                      url: p.text_id || "", text: p.text || "" });
       }
@@ -174,7 +178,31 @@ async function matchPassages(env, query, k = 5) {
       .filter((i) => Number.isInteger(i) && i >= 0 && i < ranked.length);
     if (order.length) ranked = order.map((i) => ranked[i]);
   } catch (e) { /* fall back to cosine order */ }
-  return ranked.slice(0, k);
+  // dynamic composition: anchor own tension -> lived others -> lineage -> own past.
+  // each tier gated on true relevance (raw cosine floor); empty tiers skipped.
+  const tierOf = (c) => {
+    const k = c.kind || "";
+    if (k === "own-tension") return "anchor";
+    if (k === "lived-log") return "lived";
+    if (k === "canon" || k === "roots-doc" || k === "graph") return "lineage";
+    return "ownpast";
+  };
+  const slots = { anchor: 1, lived: 3, lineage: 1, ownpast: 1 };
+  const seen = new Set();
+  const out = [];
+  for (const c of ranked) {
+    const t = tierOf(c);
+    if (!(slots[t] > 0)) continue;
+    const floor = t === "anchor" ? 0.22 : 0.28;
+    if ((raw[c.id] || 0) < floor && !(c.kind === "graph")) continue;
+    const key = stemKey(c.id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    slots[t] -= 1;
+    out.push(c);
+    if (out.length >= 6) break;
+  }
+  return out.slice(0, k);
 }
 
 function livePage() {

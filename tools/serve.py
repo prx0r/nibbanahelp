@@ -221,10 +221,12 @@ class H(BaseHTTPRequestHandler):
                 _items, _mat = _RELAY
                 _q = _np.array(_emb([clean[-1]["content"][:2000]])[0], dtype=_np.float32)
                 _q = _q / (_np.linalg.norm(_q) + 1e-9)
-                # own words first: diary, then past chats, then others
-                _BOOST = {"own-tension": 1.35, "own-chat": 1.25,
+                _raw = (_mat @ _q).astype(float)
+                _rawmap = { _items[int(_i)]["id"]: float(_raw[int(_i)]) for _i in range(len(_items)) }
+                # own words first: diary, then past chats/notes, then others
+                _BOOST = {"own-tension": 1.35, "own-notes": 1.3, "own-chat": 1.25,
                           "canon": 1.1}
-                _sc = _mat @ _q
+                _sc = _raw.copy()
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
                 _order = _np.argsort(-_sc)[:20]
@@ -251,11 +253,41 @@ class H(BaseHTTPRequestHandler):
                             _cands.append({"id": _g["id"], "kind": _g["kind"],
                                            "label": _g["label"], "url": _g["url"],
                                            "text": _g["text"]})
+                            _rawmap[_g["id"]] = 0.5
                 except Exception as e:
                     print("graph stage unavailable:", str(e)[:200])
-                for _i in _rr(clean[-1]["content"], [c["text"][:1000] for c in _cands])[:5]:
-                    relay.append(_cands[_i])
-                sources = [{"label": r["label"], "url": r["url"]} for r in relay]
+                _rrorder = _rr(clean[-1]["content"], [c["text"][:1000] for c in _cands])
+                # dynamic composition, only if truly relevant (raw cosine floor):
+                # anchor own tension -> lived others -> one lineage -> one own-past
+                def _tier(c):
+                    k = c.get("kind", "")
+                    if k == "own-tension":
+                        return "anchor"
+                    if k == "lived-log":
+                        return "lived"
+                    if k in ("canon", "roots-doc"):
+                        return "lineage"
+                    return "ownpast"
+                _ranked = [_cands[i] for i in _rrorder if 0 <= i < len(_cands)]
+                _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1}
+                _seen, relay, sources = set(), [], []
+                for _c in _ranked:
+                    _t = _tier(_c)
+                    if _slots.get(_t, 0) <= 0:
+                        continue
+                    _floor = 0.22 if _t == "anchor" else 0.28
+                    if _rawmap.get(_c["id"], 0) < _floor:
+                        continue
+                    _key = _c["id"].split(":")[-1].replace("tension-", "")
+                    if _key in _seen:
+                        continue
+                    _seen.add(_key)
+                    _slots[_t] -= 1
+                    relay.append(_c)
+                    if len(relay) >= 6:
+                        break
+                sources = [{"label": r["label"], "url": r["url"],
+                            "excerpt": r["text"][:280]} for r in relay]
             except Exception as e:
                 print("relay unavailable:", str(e)[:200])
             try:

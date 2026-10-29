@@ -7,6 +7,8 @@ embedded (model recorded in corpus/index_meta.json — mismatch forces full).
 Stdlib + numpy.
 """
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -32,6 +34,27 @@ def canon_text(path: Path) -> str:
 
     walk(d)
     return " ".join(out)
+
+
+TOMNOTES = Path("/home/box/repos/tomnotes")
+
+
+def chunk_text(text, size=1200):
+    paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    chunks, cur = [], ""
+    for p in paras:
+        if len(cur) + len(p) + 2 <= size:
+            cur = (cur + "\n\n" + p).strip()
+        else:
+            if cur:
+                chunks.append(cur)
+            while len(p) > size:
+                chunks.append(p[:size])
+                p = p[size:]
+            cur = p
+    if cur:
+        chunks.append(cur)
+    return chunks
 
 
 def collect():
@@ -86,6 +109,57 @@ def collect():
                       "url": f"sessions/{p.name}",
                       "themes": [],
                       "text": "\n".join(turns)[:2000]})
+    # 5. own bank: tomnotes diaries, essays, prior chats (your words first)
+    if TOMNOTES.is_dir():
+        conv_file = TOMNOTES / "diary training data.txt"
+        if conv_file.is_file():
+            try:
+                convos = json.loads(conv_file.read_text())
+            except (ValueError, OSError):
+                convos = []
+            for ci, c in enumerate(convos):
+                msgs = c.get("messages", []) if isinstance(c, dict) else []
+                pairs, cur_q = [], None
+                for m in msgs:
+                    if not isinstance(m, dict):
+                        continue
+                    if m.get("role") == "user":
+                        cur_q = m.get("content", "")
+                    elif m.get("role") == "assistant" and cur_q:
+                        pairs.append((cur_q, m.get("content", "")))
+                        cur_q = None
+                if not pairs and msgs:
+                    pairs = [("diary", " ".join(
+                        str(m.get("content", "")) for m in msgs
+                        if isinstance(m, dict)))]
+                for pi, (qq, aa) in enumerate(pairs):
+                    text = f"Q: {qq}\nA: {aa}".strip()[:2000]
+                    if len(text) < 40:
+                        continue
+                    items.append({"id": f"ownchat:tomnotes-diary-{ci}-{pi}",
+                                  "kind": "own-chat",
+                                  "label": f"diary {str(qq)[:60]}",
+                                  "url": "tomnotes/diary training data.txt",
+                                  "themes": [],
+                                  "text": text})
+        for name in sorted(os.listdir(TOMNOTES)):
+            p = TOMNOTES / name
+            if (not p.is_file() or p.suffix.lower() not in ("", ".txt", ".md")
+                    or name in ("diary training data.txt",)):
+                continue
+            try:
+                text = p.read_text(errors="ignore")
+            except OSError:
+                continue
+            if len(text.strip()) < 40:
+                continue
+            for chi, ch in enumerate(chunk_text(text)):
+                items.append({"id": f"ownnotes:{name}:{chi}",
+                              "kind": "own-notes",
+                              "label": f"notes: {name}",
+                              "url": f"tomnotes/{name}",
+                              "themes": [],
+                              "text": ch[:2000]})
     return [i for i in items if i["text"].strip()]
 
 
