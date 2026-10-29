@@ -279,9 +279,8 @@ def sidebar(days, link_uploads):
         for r in d["uploads"]:
             kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
                         f"{ukind(r['file'])}</a>")
-        open_style = "" if i == len(order) - 1 else " style='display:none'"
-        s.append(f"<button onclick=\"t('k{day}')\">{day}</button>"
-                 f"<div id=\"k{day}\"{open_style}>"
+        s.append(f"<div class=daybox>{day}</div>"
+                 f"<div id=\"k{day}\">"
                  + "<br>".join(kids) + "</div>")
     s.append("</div>")
     return "\n".join(s)
@@ -337,9 +336,9 @@ PAGE = """<!doctype html>
   #wrap {{ display: flex; }}
   #nav {{ flex-shrink: 0; padding-top: 1rem; padding-right: {gap};
     font-size: .8rem; }}
-  #nav button {{ display: block; width: 2.2rem; height: 2.2rem;
-    background: #fff; color: #000; border: 1px solid #000;
-    font-family: monospace; font-size: 1rem; cursor: pointer;
+  #nav .daybox {{ display: block; width: 2.2rem; height: 2.2rem; line-height: 2.2rem;
+    text-align: center; background: #fff; color: #000; border: 1px solid #000;
+    font-family: monospace; font-size: 1rem;
     margin-bottom: .3rem; }}
   #nav div {{ margin-bottom: .6rem; }}
   #nav div a {{ display: block; border: 1px solid #000; text-align: center;
