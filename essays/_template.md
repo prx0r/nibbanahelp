@@ -1,5 +1,6 @@
 day: 1
 visibility: public
+kind: essay
 voice: -
 audio: -
 ---

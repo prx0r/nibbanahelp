@@ -10,23 +10,27 @@
   a { color: #000; }
   pre { white-space: pre-wrap; font-family: monospace; }
   #wrap { display: flex; }
-  #nav { width: 12rem; flex-shrink: 0; padding-top: 1rem; }
+  #nav { width: 2.6rem; flex-shrink: 0; padding-top: 1rem; }
   #nav button { display: block; width: 2.2rem; height: 2.2rem;
     background: #fff; color: #000; border: 1px solid #000;
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; }
-  #nav div { font-size: .8rem; margin-bottom: .6rem; }
+  #nav div.kids { position: absolute; z-index: 10; background: #fff;
+    border: 1px solid #000; padding: .3rem .5rem; font-size: .8rem; }
   #main { flex: 1; min-width: 0; }
-  .motto { color: #888; font-style: italic; }
+  .motto { font-style: italic; }
+  .motto-blk, pre.blk { cursor: text; }
   pre.blk { cursor: text; }
   textarea { width: 100%; box-sizing: border-box; font-family: monospace;
     font-size: 1rem; }
 </style>
 </head>
 <body>
-<p class=motto>with each and every breath i create the conditions for liberation</p><p class=motto>the only delusion is that nibbana cannot be attained in this moment</p>
+<div class="motto-blk" data-f="motto.txt" data-kind="motto" data-raw="with each and every breath i create the conditions for liberation
+the only delusion is that nibbana cannot be attained in this moment"><p class=motto style="color:#555">"with each and every breath i create the conditions for liberation"</p>
+<p class=motto style="color:#333">"the only delusion is that nibbana cannot be attained in this moment"</p></div>
 <div id=wrap><div id=nav>
-<button onclick="t('k1')">1</button><div id="k1"><a href="#d1-e0">notes</a><br><a href="#d1-s0">What nibbana is like</a></div>
+<button onclick="t('k1')">1</button><div class="kids" id="k1"><a href="#d1-e0">notes</a><br><a href="#d1-s0">essay</a></div>
 </div><div id=main><span id="d1-e0"></span><pre class="blk" data-f="entries/day-01-attaining-nibbana.md" data-raw="# Day 1 of attaining nibbana
 
 ## Current tensions
@@ -209,27 +213,42 @@ function render(src) {
     return inline3(line);
   }).join('\n');
 }
+function renderMotto(src) {
+  var shades = ['#333', '#555', '#777', '#999', '#bbb'];
+  var lines = esc(src).split('\n').filter(function (l) { return l.trim() !== ''; }).slice(0, 5);
+  var n = lines.length;
+  return lines.map(function (ln, i) {
+    var c = shades[Math.min(n - 1 - i, 4)];
+    return '<p class=motto style="color:' + c + '">"' + inline3(ln) + '"</p>';
+  }).join('\n');
+}
+function renderFor(el, text) {
+  return el.dataset.kind === 'motto' ? renderMotto(text) : render(text);
+}
 document.addEventListener('click', function (e) {
-  var pre = e.target.closest ? e.target.closest('pre.blk') : null;
-  if (!pre || pre.dataset.open) return;
-  pre.dataset.open = '1';
+  var el = e.target.closest ? e.target.closest('[data-f]') : null;
+  if (!el || el.dataset.open) return;
+  el.dataset.open = '1';
+  var raw = el.dataset.raw;
   var ta = document.createElement('textarea');
-  ta.rows = Math.max(4, pre.dataset.raw.split('\n').length + 1);
-  ta.value = pre.dataset.raw;
+  ta.rows = Math.max(2, raw.split('\n').length + 1);
+  ta.value = raw;
   ta.style.width = '100%';
   ta.style.boxSizing = 'border-box';
+  ta.style.fontFamily = 'monospace';
+  ta.style.fontSize = '1rem';
   var timer = null, dirty = false, lastOk = true, closed = false;
   function swapBack() {
-    pre.innerHTML = render(pre.dataset.raw);
-    delete pre.dataset.open;
-    pre.style.display = '';
+    el.innerHTML = renderFor(el, el.dataset.raw);
+    delete el.dataset.open;
+    el.style.display = '';
     ta.remove();
   }
   function save() {
-    var body = new URLSearchParams({ f: pre.dataset.f, body: ta.value });
+    var body = new URLSearchParams({ f: el.dataset.f, body: ta.value });
     fetch('save', { method: 'POST', body: body }).then(function (r) {
       if (!r.ok) throw 0;
-      pre.dataset.raw = ta.value;
+      el.dataset.raw = ta.value;
       lastOk = true;
       ta.style.border = '';
       if (closed) swapBack();
@@ -245,8 +264,8 @@ document.addEventListener('click', function (e) {
     if (dirty) { dirty = false; closed = true; save(); }
     else if (lastOk) { swapBack(); }
   });
-  pre.style.display = 'none';
-  pre.parentNode.insertBefore(ta, pre.nextSibling);
+  el.style.display = 'none';
+  el.parentNode.insertBefore(ta, el.nextSibling);
   ta.focus();
 });
 

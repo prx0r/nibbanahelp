@@ -61,6 +61,9 @@ export default {
       if (typeof body !== "string" || body.length > 200000) {
         return new Response("bad body", { status: 400 });
       }
+      if (f === "motto.txt" && body.split("\n").filter((l) => l.trim()).length > 5) {
+        return new Response("max 5 lines", { status: 400 });
+      }
       await env.BRAIN.put("pending/" + f, body);
       return page(
         "saved",

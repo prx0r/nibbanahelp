@@ -31,6 +31,31 @@ def raw(src: str) -> str:
     return "<pre>" + render(src) + "</pre>"
 
 
+SHADES = ["#333", "#555", "#777", "#999", "#bbb"]
+MAX_MOTTO = 5
+
+
+def motto_html(text: str) -> str:
+    lines = [l for l in text.splitlines() if l.strip()][:MAX_MOTTO]
+    n = len(lines)
+    out = []
+    for i, ln in enumerate(lines):
+        c = SHADES[min(n - 1 - i, 4)]
+        out.append(f'<p class=motto style="color:{c}">'
+                   f'"{inline3(html.escape(ln))}"</p>')
+    return "\n".join(out)
+
+
+def motto_block() -> str:
+    mp = ROOT / "motto.txt"
+    if not mp.is_file():
+        return ""
+    text = mp.read_text().strip()
+    return (f'<div class="motto-blk" data-f="motto.txt" data-kind="motto" '
+            f'data-raw="{html.escape(text, quote=True)}">'
+            + motto_html(text) + "</div>")
+
+
 def block(anchor: str, fpath: str, body: str) -> str:
     return (f"<span id=\"{anchor}\"></span>"
             f"<pre class=\"blk\" data-f=\"{fpath}\" "
@@ -59,27 +84,42 @@ function render(src) {
     return inline3(line);
   }).join('\n');
 }
+function renderMotto(src) {
+  var shades = ['#333', '#555', '#777', '#999', '#bbb'];
+  var lines = esc(src).split('\n').filter(function (l) { return l.trim() !== ''; }).slice(0, 5);
+  var n = lines.length;
+  return lines.map(function (ln, i) {
+    var c = shades[Math.min(n - 1 - i, 4)];
+    return '<p class=motto style="color:' + c + '">"' + inline3(ln) + '"</p>';
+  }).join('\n');
+}
+function renderFor(el, text) {
+  return el.dataset.kind === 'motto' ? renderMotto(text) : render(text);
+}
 document.addEventListener('click', function (e) {
-  var pre = e.target.closest ? e.target.closest('pre.blk') : null;
-  if (!pre || pre.dataset.open) return;
-  pre.dataset.open = '1';
+  var el = e.target.closest ? e.target.closest('[data-f]') : null;
+  if (!el || el.dataset.open) return;
+  el.dataset.open = '1';
+  var raw = el.dataset.raw;
   var ta = document.createElement('textarea');
-  ta.rows = Math.max(4, pre.dataset.raw.split('\n').length + 1);
-  ta.value = pre.dataset.raw;
+  ta.rows = Math.max(2, raw.split('\n').length + 1);
+  ta.value = raw;
   ta.style.width = '100%';
   ta.style.boxSizing = 'border-box';
+  ta.style.fontFamily = 'monospace';
+  ta.style.fontSize = '1rem';
   var timer = null, dirty = false, lastOk = true, closed = false;
   function swapBack() {
-    pre.innerHTML = render(pre.dataset.raw);
-    delete pre.dataset.open;
-    pre.style.display = '';
+    el.innerHTML = renderFor(el, el.dataset.raw);
+    delete el.dataset.open;
+    el.style.display = '';
     ta.remove();
   }
   function save() {
-    var body = new URLSearchParams({ f: pre.dataset.f, body: ta.value });
+    var body = new URLSearchParams({ f: el.dataset.f, body: ta.value });
     fetch('save', { method: 'POST', body: body }).then(function (r) {
       if (!r.ok) throw 0;
-      pre.dataset.raw = ta.value;
+      el.dataset.raw = ta.value;
       lastOk = true;
       ta.style.border = '';
       if (closed) swapBack();
@@ -95,8 +135,8 @@ document.addEventListener('click', function (e) {
     if (dirty) { dirty = false; closed = true; save(); }
     else if (lastOk) { swapBack(); }
   });
-  pre.style.display = 'none';
-  pre.parentNode.insertBefore(ta, pre.nextSibling);
+  el.style.display = 'none';
+  el.parentNode.insertBefore(ta, el.nextSibling);
   ta.focus();
 });
 """
@@ -114,7 +154,7 @@ def header(p: Path) -> dict:
     head = text.split("---")[0] if "---" in text else ""
     out = {}
     for k in ("day", "visibility", "voice", "audio", "id", "status",
-              "summary"):
+              "summary", "kind"):
         m = re.search(rf"^{k}:\s*(.+)$", head, re.M)
         if m:
             out[k] = m.group(1).strip()
@@ -127,8 +167,8 @@ def card(title, meta, body_html):
             f'<div class="meta">{meta}</div>{body_html}</article>')
 
 
-UKIND = {".mp3": "voice", ".wav": "voice", ".m4a": "voice",
-         ".ogg": "voice", ".mp4": "video", ".mov": "video",
+UKIND = {".mp3": "audio", ".wav": "audio", ".m4a": "audio",
+         ".ogg": "audio", ".mp4": "video", ".mov": "video",
          ".webm": "video", ".md": "note", ".txt": "note"}
 
 
@@ -152,7 +192,9 @@ def collect():
             d = days.setdefault(h["day"], {"entries": [], "essays": [],
                                            "uploads": []})
             kind = "essays" if p.parent.name == "essays" else "entries"
-            d[kind].append((p.stem, body, p.relative_to(ROOT).as_posix()))
+            ek = h.get("kind", "essay") if kind == "essays" else ""
+            d[kind].append((p.stem, body, p.relative_to(ROOT).as_posix(),
+                            ek))
     man = ROOT / "uploads" / "manifest.json"
     if man.is_file():
         try:
@@ -171,29 +213,23 @@ def collect():
     return days, tensions
 
 
-def etitle(body):
-    m = re.search(r"^#\s+(.+)$", body, re.M)
-    return m.group(1).strip() if m else None
-
-
 def sidebar(days, link_uploads):
     s = ["<div id=nav>"]
     order = sorted(days, key=daykey)
     for i, day in enumerate(order):
         d = days[day]
         kids = []
-        for n, (_stem, _body, _rp) in enumerate(d["entries"]):
+        for n, (_stem, _body, _rp, _ek) in enumerate(d["entries"]):
             label = "notes" if len(d["entries"]) == 1 else f"notes {n + 1}"
             kids.append(f"<a href=\"#d{day}-e{n}\">{label}</a>")
-        for n, (_stem, body, _rp) in enumerate(d["essays"]):
-            kids.append(f"<a href=\"#d{day}-s{n}\">"
-                        f"{etitle(body) or _stem}</a>")
+        for n, (_stem, _body, _rp, ek) in enumerate(d["essays"]):
+            kids.append(f"<a href=\"#d{day}-s{n}\">{ek or 'essay'}</a>")
         for r in d["uploads"]:
             kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
-                        f"{r['file']}</a>")
+                        f"{ukind(r['file'])}</a>")
         open_style = "" if i == len(order) - 1 else " style='display:none'"
         s.append(f"<button onclick=\"t('k{day}')\">{day}</button>"
-                 f"<div id=\"k{day}\"{open_style}>"
+                 f"<div class=\"kids\" id=\"k{day}\"{open_style}>"
                  + "<br>".join(kids) + "</div>")
     s.append("</div>")
     return "\n".join(s)
@@ -203,9 +239,9 @@ def content(days):
     out = []
     for day in sorted(days, key=daykey):
         d = days[day]
-        for n, (_stem, body, rp) in enumerate(d["entries"]):
+        for n, (_stem, body, rp, _ek) in enumerate(d["entries"]):
             out.append(block(f"d{day}-e{n}", rp, body))
-        for n, (_stem, body, rp) in enumerate(d["essays"]):
+        for n, (_stem, body, rp, _ek) in enumerate(d["essays"]):
             out.append(block(f"d{day}-s{n}", rp, body))
     return "\n".join(out)
 
@@ -227,12 +263,7 @@ def main():
             shutil.copy(f, updir / f.name)
     nav = sidebar(days, lambda fn: f"uploads/{fn}")
     body = content(days) + tension_blocks(tensions)
-    motto = ""
-    mp = ROOT / "motto.txt"
-    if mp.is_file():
-        motto = "".join(f"<p class=motto>{html.escape(line)}</p>"
-                         for line in mp.read_text().splitlines()
-                         if line.strip())
+    motto = motto_block()
 
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS))
@@ -251,14 +282,16 @@ PAGE = """<!doctype html>
   a {{ color: #000; }}
   pre {{ white-space: pre-wrap; font-family: monospace; }}
   #wrap {{ display: flex; }}
-  #nav {{ width: 12rem; flex-shrink: 0; padding-top: 1rem; }}
+  #nav {{ width: 2.6rem; flex-shrink: 0; padding-top: 1rem; }}
   #nav button {{ display: block; width: 2.2rem; height: 2.2rem;
     background: #fff; color: #000; border: 1px solid #000;
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; }}
-  #nav div {{ font-size: .8rem; margin-bottom: .6rem; }}
+  #nav div.kids {{ position: absolute; z-index: 10; background: #fff;
+    border: 1px solid #000; padding: .3rem .5rem; font-size: .8rem; }}
   #main {{ flex: 1; min-width: 0; }}
-  .motto {{ color: #888; font-style: italic; }}
+  .motto {{ font-style: italic; }}
+  .motto-blk, pre.blk {{ cursor: text; }}
   pre.blk {{ cursor: text; }}
   textarea {{ width: 100%; box-sizing: border-box; font-family: monospace;
     font-size: 1rem; }}

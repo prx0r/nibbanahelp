@@ -33,9 +33,10 @@ _site_spec = _ilu.spec_from_file_location(
     "nibsite", Path(__file__).resolve().parent / "site.py")
 _nibsite = _ilu.module_from_spec(_site_spec)
 _site_spec.loader.exec_module(_nibsite)
-header, raw, collect, sidebar, content, tension_blocks, JS = (
+header, raw, collect, sidebar, content, tension_blocks, JS, motto_block = (
     _nibsite.header, _nibsite.raw, _nibsite.collect, _nibsite.sidebar,
-    _nibsite.content, _nibsite.tension_blocks, _nibsite.JS)
+    _nibsite.content, _nibsite.tension_blocks, _nibsite.JS,
+    _nibsite.motto_block)
 
 ROOT = Path(__file__).resolve().parent.parent
 UPLOADS = ROOT / "uploads"
@@ -49,14 +50,16 @@ CSS = ("body{background:#fff;color:#000;"
        "a{color:#000}"
        "pre{white-space:pre-wrap;font-family:monospace}"
        "#wrap{display:flex}"
-       "#nav{width:12rem;flex-shrink:0;padding-top:1rem}"
+       "#nav{width:2.6rem;flex-shrink:0;padding-top:1rem}"
        "#nav button{display:block;width:2.2rem;height:2.2rem;"
        "background:#fff;color:#000;border:1px solid #000;"
        "font-family:monospace;font-size:1rem;cursor:pointer;"
        "margin-bottom:.3rem}"
-       "#nav div{font-size:.8rem;margin-bottom:.6rem}"
+       "#nav div.kids{position:absolute;z-index:10;background:#fff;"
+       "border:1px solid #000;padding:.3rem .5rem;font-size:.8rem}"
        "#main{flex:1;min-width:0}"
-       ".motto{color:#888;font-style:italic}"
+       ".motto{font-style:italic}"
+       ".motto-blk,pre.blk{cursor:text}"
        "input[type=text]{width:100%;font-family:monospace;font-size:1rem;"
        "border:1px solid #000;padding:.5rem;background:#fff;color:#000}"
        "textarea{width:100%;box-sizing:border-box;font-family:monospace;"
@@ -98,10 +101,7 @@ def entry_files():
 
 def page():
     days, tensions = collect()
-    mp = ROOT / "motto.txt"
-    motto = "".join(f"<p class=motto>{html.escape(line)}</p>"
-                    for line in mp.read_text().splitlines()
-                    if line.strip()) if mp.is_file() else ""
+    motto = motto_block()
     forms = ["<form method=post action=/upload enctype=multipart/form-data>"
              "<input type=file name=file><br>"
              "<label><input type=checkbox name=backfill value=1> "
@@ -179,6 +179,9 @@ class H(BaseHTTPRequestHandler):
             body = (f.get("body", [""])[0] or "").rstrip() + "\n"
             if p is None:
                 return self._send("no such file", 400)
+            if p.name == "motto.txt" and len(
+                    [l for l in body.splitlines() if l.strip()]) > 5:
+                return self._send("max 5 lines", 400)
             text = p.read_text()
             head = text.split("---", 1)[0] + "---\n" if "---" in text else ""
             p.write_text(head + body)
