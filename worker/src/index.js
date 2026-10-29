@@ -1,5 +1,6 @@
 import PAGE from "./page.js";
 import FILES from "./files.js";
+import { GAP } from "./theme.js";
 
 const ALLOWED = /^(entries|essays|tensions)\/[^/]+\.md$|^motto\.txt$/;
 
@@ -9,11 +10,11 @@ function page(title, inner) {
       `<meta name=viewport content='width=device-width,initial-scale=1'>` +
       `<title>${title}</title><style>` +
       `body{background:#fff;color:#000;font-family:monospace;` +
-      `margin:0;padding:0 1rem}` +
+      `margin:0;padding:0 ${GAP}}` +
       `a{color:#000}` +
       `pre{white-space:pre-wrap;font-family:monospace}` +
       `#wrap{display:flex}` +
-      `#nav{flex-shrink:0;padding-top:1rem;padding-right:1rem;` +
+      `#nav{flex-shrink:0;padding-top:1rem;padding-right:${GAP};` +
       `font-size:.8rem}` +
       `#nav button{display:block;width:2.2rem;height:2.2rem;` +
       `background:#fff;color:#000;border:1px solid #000;` +

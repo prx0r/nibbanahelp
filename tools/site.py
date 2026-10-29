@@ -12,6 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
 
+# Proportions: left screen edge to squares == squares to main body.
+# One value. Everything derives from it.
+GAP = "1rem"
+
 
 def render(src: str) -> str:
     # Exactly what was written. Only four things render:
@@ -265,7 +269,8 @@ def main():
     motto = motto_block()
 
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS))
+    OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS,
+                               gap=GAP))
     print(f"wrote {OUT.relative_to(ROOT)}")
 
 
@@ -277,11 +282,11 @@ PAGE = """<!doctype html>
 <title>nibbanahelp</title>
 <style>
   body {{ background: #fff; color: #000; font-family: monospace;
-         margin: 0; padding: 0 1rem; }}
+         margin: 0; padding: 0 {gap}; }}
   a {{ color: #000; }}
   pre {{ white-space: pre-wrap; font-family: monospace; }}
   #wrap {{ display: flex; }}
-  #nav {{ flex-shrink: 0; padding-top: 1rem; padding-right: 1rem;
+  #nav {{ flex-shrink: 0; padding-top: 1rem; padding-right: {gap};
     font-size: .8rem; }}
   #nav button {{ display: block; width: 2.2rem; height: 2.2rem;
     background: #fff; color: #000; border: 1px solid #000;

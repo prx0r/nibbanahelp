@@ -6,8 +6,11 @@ import { fileURLToPath } from "url";
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const root = join(dir, "..");
-const html = readFileSync(join(root, "site", "index.html"), "utf8");
+const gapMatch = readFileSync(join(root, "tools", "site.py"), "utf8").match(/^GAP = "([^"]+)"/m);
+const gap = gapMatch ? gapMatch[1] : "1rem";
 mkdirSync(join(dir, "src"), { recursive: true });
+writeFileSync(join(dir, "src", "theme.js"), `export const GAP = ${JSON.stringify(gap)};\n`);
+const html = readFileSync(join(root, "site", "index.html"), "utf8");
 writeFileSync(
   join(dir, "src", "page.js"),
   "export default " + JSON.stringify(html) + ";\n"

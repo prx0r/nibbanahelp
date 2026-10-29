@@ -33,10 +33,10 @@ _site_spec = _ilu.spec_from_file_location(
     "nibsite", Path(__file__).resolve().parent / "site.py")
 _nibsite = _ilu.module_from_spec(_site_spec)
 _site_spec.loader.exec_module(_nibsite)
-header, raw, collect, sidebar, content, tension_blocks, JS, motto_block = (
+header, raw, collect, sidebar, content, tension_blocks, JS, motto_block, GAP = (
     _nibsite.header, _nibsite.raw, _nibsite.collect, _nibsite.sidebar,
     _nibsite.content, _nibsite.tension_blocks, _nibsite.JS,
-    _nibsite.motto_block)
+    _nibsite.motto_block, _nibsite.GAP)
 
 ROOT = Path(__file__).resolve().parent.parent
 UPLOADS = ROOT / "uploads"
@@ -46,11 +46,11 @@ DAY1 = date(2026, 10, 28)
 
 CSS = ("body{background:#fff;color:#000;"
        "font-family:monospace;"
-       "margin:0;padding:0 1rem}"
+       "margin:0;padding:0 " + GAP + "}"
        "a{color:#000}"
        "pre{white-space:pre-wrap;font-family:monospace}"
        "#wrap{display:flex}"
-       "#nav{flex-shrink:0;padding-top:1rem;padding-right:1rem;"
+       "#nav{flex-shrink:0;padding-top:1rem;padding-right:" + GAP + ";"
        "font-size:.8rem}"
        "#nav button{display:block;width:2.2rem;height:2.2rem;"
        "background:#fff;color:#000;border:1px solid #000;"
