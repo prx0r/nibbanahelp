@@ -106,6 +106,11 @@ def main():
         pass
     todo = [i for i in items if i["id"] not in vecs]
     print(f"{len(todo)} new to embed", flush=True)
+    stale = [k for k in vecs if k not in {i["id"] for i in items}]
+    for k in stale:
+        del vecs[k]
+    if stale:
+        print(f"pruned {len(stale)} stale vectors", flush=True)
     B = 64
     dim = None
     for a in range(0, len(todo), B):
