@@ -244,7 +244,7 @@ def card(title, meta, body_html):
 
 UKIND = {".mp3": "audio", ".wav": "audio", ".m4a": "audio",
          ".ogg": "audio", ".mp4": "video", ".mov": "video",
-         ".webm": "video", ".md": "note", ".txt": "note"}
+         ".webm": "video", ".md": "essay", ".txt": "essay"}
 
 
 def ukind(name):
