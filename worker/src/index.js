@@ -215,7 +215,7 @@ export default {
       const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT + relayBlock }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
       let reply;
       try {
-        const out = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { messages, max_tokens: 400 });
+        const out = await env.AI.run("@cf/deepseek-ai/deepseek-v4-flash", { messages, max_tokens: 800 });
         reply = out.response || out.result?.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) || "";
         if (typeof reply !== "string" || !reply.trim()) throw new Error("empty");
       } catch (e) {

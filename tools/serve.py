@@ -259,8 +259,8 @@ class H(BaseHTTPRequestHandler):
                       f"- [{r['kind']}] {r['label']} :: {r['url']}\n"
                       f"  {r['text'][:600]}" for r in relay)) if relay else ""
                 reply = _aichat([{"role": "system",
-                                   "content": CHAT_SYSTEM + rb}] + clean,
-                                max_tokens=400)
+                        "content": CHAT_SYSTEM + rb}] + clean,
+                        max_tokens=800)
             except Exception:
                 return self._send("ai error", 502)
             import datetime as _dt, random as _r

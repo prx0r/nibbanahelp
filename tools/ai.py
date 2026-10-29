@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """ai.py — shared Cloudflare Workers AI backend (free tier). Stdlib only.
 
-Embeddings: @cf/baai/bge-base-en-v1.5
-Chat: @cf/meta/llama-3.3-70b-instruct-fp8-fast
+Embeddings: @cf/baai/bge-m3 (1024-dim). Chat: @cf/deepseek-ai/deepseek-v4-flash.
+Rerank: @cf/baai/bge-reranker-base. All free tier, no spend, ever.
 Creds: $CF_API_TOKEN / $CF_ACCOUNT_ID, else /root/.r2-env
 """
 import json
@@ -25,7 +25,7 @@ if not TOKEN:
 BASE = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/ai/run"
 
 EMBED_MODEL = "@cf/baai/bge-m3"
-CHAT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+CHAT_MODEL = "@cf/deepseek-ai/deepseek-v4-flash"
 
 
 def _post(model: str, payload: dict, timeout: int = 120) -> dict:
@@ -45,7 +45,7 @@ def embed_batch(texts: list, model: str = None) -> list:
     return out["result"]["data"]
 
 
-def chat(messages: list, max_tokens: int = 500) -> str:
+def chat(messages: list, max_tokens: int = 800) -> str:
     out = _post(CHAT_MODEL,
                 {"messages": messages, "max_tokens": max_tokens})
     return out["result"]["choices"][0]["message"]["content"]
