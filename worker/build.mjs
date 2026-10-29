@@ -52,7 +52,7 @@ for (const f of readdirSync(join(root, "tensions"))) {
   context += `- ${get("id")} [${get("status")}] roots=${get("roots")} :: ${get("summary")}\n  ${body}\n`;
 }
 context += "\nROOTS:\n";
-for (const f of ["greed-lobha.md", "hatred-dosa.md", "delusion-moha.md"]) {
+for (const f of ["greed-lobha.md", "hatred-dosa.md", "delusion-moha.md", "abhidhamma.md"]) {
   try {
     context += `--- ${f} ---\n` + readFileSync(join(root, "roots", f), "utf8").slice(0, 900) + "\n";
   } catch (e) { /* skip */ }
