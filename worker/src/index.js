@@ -13,13 +13,13 @@ function page(title, inner) {
       `a{color:#000}` +
       `pre{white-space:pre-wrap;font-family:monospace}` +
       `#wrap{display:flex}` +
-      `#nav{width:2.6rem;flex-shrink:0;padding-top:1rem}` +
+      `#nav{flex-shrink:0;padding-top:1rem;padding-right:1rem;` +
+      `font-size:.8rem}` +
       `#nav button{display:block;width:2.2rem;height:2.2rem;` +
       `background:#fff;color:#000;border:1px solid #000;` +
       `font-family:monospace;font-size:1rem;cursor:pointer;` +
       `margin-bottom:.3rem}` +
-      `#nav div.kids{position:absolute;z-index:10;background:#fff;` +
-      `border:1px solid #000;padding:.3rem .5rem;font-size:.8rem}` +
+      `#nav div{margin-bottom:.6rem}` +
       `#main{flex:1;min-width:0}` +
       `.motto{font-style:italic}` +
       `.motto-blk,pre.blk{cursor:text}` +

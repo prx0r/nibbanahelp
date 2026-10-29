@@ -220,16 +220,16 @@ def sidebar(days, link_uploads):
         d = days[day]
         kids = []
         for n, (_stem, _body, _rp, _ek) in enumerate(d["entries"]):
-            label = "notes" if len(d["entries"]) == 1 else f"notes {n + 1}"
-            kids.append(f"<a href=\"#d{day}-e{n}\">{label}</a>")
-        for n, (_stem, _body, _rp, ek) in enumerate(d["essays"]):
-            kids.append(f"<a href=\"#d{day}-s{n}\">{ek or 'essay'}</a>")
+            kids.append(f"diary <a href=\"#d{day}-e{n}\">{_stem}</a>")
+        for n, (_stem, _body, _rp, _ek) in enumerate(d["essays"]):
+            kids.append(f"essay <a href=\"#d{day}-s{n}\">{_stem}</a>")
         for r in d["uploads"]:
-            kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
-                        f"{ukind(r['file'])}</a>")
+            kids.append(f"{ukind(r['file'])} "
+                        f"<a href=\"{link_uploads(r['file'])}\">"
+                        f"{r['file']}</a>")
         open_style = "" if i == len(order) - 1 else " style='display:none'"
         s.append(f"<button onclick=\"t('k{day}')\">{day}</button>"
-                 f"<div class=\"kids\" id=\"k{day}\"{open_style}>"
+                 f"<div id=\"k{day}\"{open_style}>"
                  + "<br>".join(kids) + "</div>")
     s.append("</div>")
     return "\n".join(s)
@@ -282,13 +282,13 @@ PAGE = """<!doctype html>
   a {{ color: #000; }}
   pre {{ white-space: pre-wrap; font-family: monospace; }}
   #wrap {{ display: flex; }}
-  #nav {{ width: 2.6rem; flex-shrink: 0; padding-top: 1rem; }}
+  #nav {{ flex-shrink: 0; padding-top: 1rem; padding-right: 1rem;
+    font-size: .8rem; }}
   #nav button {{ display: block; width: 2.2rem; height: 2.2rem;
     background: #fff; color: #000; border: 1px solid #000;
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; }}
-  #nav div.kids {{ position: absolute; z-index: 10; background: #fff;
-    border: 1px solid #000; padding: .3rem .5rem; font-size: .8rem; }}
+  #nav div {{ margin-bottom: .6rem; }}
   #main {{ flex: 1; min-width: 0; }}
   .motto {{ font-style: italic; }}
   .motto-blk, pre.blk {{ cursor: text; }}

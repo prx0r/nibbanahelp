@@ -10,13 +10,13 @@
   a { color: #000; }
   pre { white-space: pre-wrap; font-family: monospace; }
   #wrap { display: flex; }
-  #nav { width: 2.6rem; flex-shrink: 0; padding-top: 1rem; }
+  #nav { flex-shrink: 0; padding-top: 1rem; padding-right: 1rem;
+    font-size: .8rem; }
   #nav button { display: block; width: 2.2rem; height: 2.2rem;
     background: #fff; color: #000; border: 1px solid #000;
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; }
-  #nav div.kids { position: absolute; z-index: 10; background: #fff;
-    border: 1px solid #000; padding: .3rem .5rem; font-size: .8rem; }
+  #nav div { margin-bottom: .6rem; }
   #main { flex: 1; min-width: 0; }
   .motto { font-style: italic; }
   .motto-blk, pre.blk { cursor: text; }
@@ -30,7 +30,7 @@
 the only delusion is that nibbana cannot be attained in this moment"><p class=motto style="color:#555">"with each and every breath i create the conditions for liberation"</p>
 <p class=motto style="color:#333">"the only delusion is that nibbana cannot be attained in this moment"</p></div>
 <div id=wrap><div id=nav>
-<button onclick="t('k1')">1</button><div class="kids" id="k1"><a href="#d1-e0">notes</a><br><a href="#d1-s0">essay</a></div>
+<button onclick="t('k1')">1</button><div id="k1">diary <a href="#d1-e0">day-01-attaining-nibbana</a><br>essay <a href="#d1-s0">day-01-what-nibbana-is-like</a></div>
 </div><div id=main><span id="d1-e0"></span><pre class="blk" data-f="entries/day-01-attaining-nibbana.md" data-raw="# Day 1 of attaining nibbana
 
 ## Current tensions
