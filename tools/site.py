@@ -421,6 +421,14 @@ document.getElementById('f').addEventListener('submit', function (e) {
   }).then(function (d) {
     say('ai', d.reply);
     transcript.push({ role: 'assistant', content: d.reply });
+    (d.sources || []).forEach(function (s) {
+      var p = document.createElement('p');
+      var a = document.createElement('a');
+      a.href = s.url; a.textContent = '→ ' + s.label;
+      a.target = '_blank'; a.rel = 'noopener';
+      p.appendChild(a); log.appendChild(p);
+    });
+    window.scrollTo(0, document.body.scrollHeight);
   }).catch(function () { say('ai', '[offline mirror — connect to talk]'); });
 });
 </script>

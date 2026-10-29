@@ -199,13 +199,45 @@ class H(BaseHTTPRequestHandler):
             msgs = data.get("messages", [])[-12:]
             if not msgs or not isinstance(msgs, list):
                 return self._send("no messages", 400)
+            clean = [m for m in msgs if m.get("role") in ("user", "assistant")]
+            if not clean or clean[-1].get("role") != "user":
+                return self._send("no question", 400)
+            relay, sources = [], []
+            try:
+                from ai import (chat as _aichat, embed_batch as _emb,
+                                rerank as _rr, CHAT_SYSTEM)
+                import numpy as _np
+                global _RELAY
+                try:
+                    _RELAY
+                except NameError:
+                    _RELAY = None
+                if _RELAY is None:
+                    _items = _json.loads((ROOT / "corpus" / "index.json").read_text())
+                    _vecs = _json.loads((ROOT / "corpus" / "vectors.json").read_text())
+                    _mat = _np.array([_vecs[i["id"]] for i in _items], dtype=_np.float32)
+                    _mat = _mat / (_np.linalg.norm(_mat, axis=1, keepdims=True) + 1e-9)
+                    _RELAY = (_items, _mat)
+                _items, _mat = _RELAY
+                _q = _np.array(_emb([clean[-1]["content"][:2000]])[0], dtype=_np.float32)
+                _q = _q / (_np.linalg.norm(_q) + 1e-9)
+                _order = _np.argsort(-(_mat @ _q))[:20]
+                _cands = [_items[int(i)] for i in _order]
+                for _i in _rr(clean[-1]["content"], [c["text"][:1000] for c in _cands])[:5]:
+                    relay.append(_cands[_i])
+                sources = [{"label": r["label"], "url": r["url"]} for r in relay]
+            except Exception as e:
+                print("relay unavailable:", str(e)[:200])
             try:
                 from ai import chat as _aichat, CHAT_SYSTEM
-                reply = _aichat([{"role": "system", "content": CHAT_SYSTEM}] +
-                                [m for m in msgs
-                                 if m.get("role") in ("user", "assistant")],
+                rb = ("\n\nSIMILAR LIVED PASSAGES (relay these with their "
+                      "sources, never invent advice):\n" + "\n".join(
+                      f"- [{r['kind']}] {r['label']} :: {r['url']}\n"
+                      f"  {r['text'][:600]}" for r in relay)) if relay else ""
+                reply = _aichat([{"role": "system",
+                                   "content": CHAT_SYSTEM + rb}] + clean,
                                 max_tokens=400)
-            except Exception as e:
+            except Exception:
                 return self._send("ai error", 502)
             import datetime as _dt, random as _r
             (ROOT / "sessions").mkdir(exist_ok=True)
@@ -214,13 +246,14 @@ class H(BaseHTTPRequestHandler):
             (ROOT / "sessions" / fn).write_text(_json.dumps(
                 {"date": str(_dt.date.today()), "via": "serve",
                  "messages": msgs + [{"role": "assistant",
-                                       "content": reply}]},
+                                       "content": reply}],
+                 "relayed": [r["id"] for r in relay]},
                 ensure_ascii=False, indent=1))
             git("add", f"sessions/{fn}")
             git("commit", "-q", "-m", f"chat: {fn}")
             git("push", "-q", "origin", "main")
-            self._send(_json.dumps({"reply": reply}), 200,
-                       "application/json")
+            self._send(_json.dumps({"reply": reply, "sources": sources}),
+                       200, "application/json")
             return
         if self.path == "/save" and n and "urlencoded" in ctype:
             from urllib.parse import parse_qs as _pq

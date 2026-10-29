@@ -62,6 +62,55 @@ function esc(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function cosine(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (let i = 0; i < a.length && i < b.length; i++) {
+    dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
+}
+
+let RELAY = null;
+async function loadRelay(env) {
+  if (RELAY) return RELAY;
+  const [v, i] = await Promise.all([
+    env.BRAIN.get("relay/vectors.json").then((r) => (r ? r.json() : {})),
+    env.BRAIN.get("relay/index.json").then((r) => (r ? r.json() : [])),
+  ]);
+  RELAY = { vecs: v, items: i };
+  return RELAY;
+}
+
+async function matchPassages(env, query, k = 5) {
+  const { vecs, items } = await loadRelay(env);
+  if (!items.length) return [];
+  const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
+  const q = emb.data ? emb.data[0] : emb.result.data[0];
+  const scored = [];
+  for (const item of items) {
+    const v = vecs[item.id];
+    if (!v) continue;
+    scored.push([cosine(q, v), item]);
+  }
+  scored.sort((a, b) => b[0] - a[0]);
+  const top = scored.slice(0, 20);
+  if (!top.length) return [];
+  let ranked = top;
+  try {
+    const rr = await env.AI.run("@cf/baai/bge-reranker-base", {
+      query,
+      contexts: top.map(([, item]) => ({ text: item.text.slice(0, 1000) })),
+    });
+    const order = (rr.response || rr.result?.response || [])
+      .slice()
+      .sort((a, b) => b.score - a.score)
+      .map((r) => r.id)
+      .filter((i) => i < top.length);
+    if (order.length) ranked = order.map((i) => top[i]);
+  } catch (e) { /* fall back to cosine order */ }
+  return ranked.slice(0, k).map(([, item]) => item);
+}
+
 function livePage() {
   const m = PAGE.match(/<body>([\s\S]*)<\/body>/);
   return m ? m[1] : PAGE;
@@ -100,7 +149,16 @@ export default {
       if (!clean.length || clean[clean.length - 1].role !== "user") {
         return new Response("no question", { status: 400 });
       }
-      const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
+      const query = clean[clean.length - 1].content;
+      let relay = [];
+      try {
+        relay = await matchPassages(env, query, 5);
+      } catch (e) { /* chat still works without relay */ }
+      const relayBlock = relay.length
+        ? "\n\nSIMILAR LIVED PASSAGES (relay these with their sources, never invent advice):\n" +
+          relay.map((m) => `- [${m.kind}] ${m.label} :: ${m.url}\n  ${m.text.slice(0, 600)}`).join("\n")
+        : "";
+      const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT + relayBlock }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
       let reply;
       try {
         const out = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { messages, max_tokens: 400 });
@@ -109,8 +167,8 @@ export default {
       } catch (e) {
         return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
       }
-      await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: clean[clean.length - 1].content, assistant: reply }));
-      return new Response(JSON.stringify({ reply }), { headers: { "content-type": "application/json" } });
+      await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: query, assistant: reply, relayed: relay.map((m) => m.id) }));
+      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url })) }), { headers: { "content-type": "application/json" } });
     }
 
     if (url.pathname === "/save" && req.method === "POST") {

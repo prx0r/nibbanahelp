@@ -24,6 +24,9 @@ if not TOKEN:
 
 BASE = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/ai/run"
 
+EMBED_MODEL = "@cf/baai/bge-m3"
+CHAT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+
 
 def _post(model: str, payload: dict, timeout: int = 120) -> dict:
     req = urllib.request.Request(
@@ -36,16 +39,31 @@ def _post(model: str, payload: dict, timeout: int = 120) -> dict:
         return json.load(r)
 
 
-def embed_batch(texts: list) -> list:
+def embed_batch(texts: list, model: str = None) -> list:
     """texts: list[str] (batch up to ~64) -> list[vector]."""
-    out = _post("@cf/baai/bge-base-en-v1.5", {"text": texts})
+    out = _post(model or EMBED_MODEL, {"text": texts})
     return out["result"]["data"]
 
 
 def chat(messages: list, max_tokens: int = 500) -> str:
-    out = _post("@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    out = _post(CHAT_MODEL,
                 {"messages": messages, "max_tokens": max_tokens})
     return out["result"]["choices"][0]["message"]["content"]
+
+
+def rerank(query: str, texts: list) -> list:
+    """Cross-encoder rerank. Returns input indices, most relevant first."""
+    out = _post("@cf/baai/bge-reranker-base",
+                {"query": query,
+                 "contexts": [{"text": t[:1000]} for t in texts]})
+    res = out.get("result", {}).get("response", [])
+    if isinstance(res, dict):
+        res = res.get("response", [])
+    order = sorted([r for r in res if isinstance(r, dict)],
+                   key=lambda r: r.get("score", 0), reverse=True)
+    ids = [r["id"] for r in order
+           if isinstance(r.get("id"), int) and 0 <= r["id"] < len(texts)]
+    return ids or list(range(len(texts)))
 
 
 CHAT_SYSTEM = (

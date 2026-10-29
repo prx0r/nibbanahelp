@@ -35,6 +35,11 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Frontend renders raw: no markdown conversion, no font loads, no meta
   chrome. Content in `<pre>`, monospace, white. Never add styling.
 - `motto.txt`: max 5 lines, newest last (darkest). Editable like everything.
+- Relay index: `tools/build_index.py` embeds with bge-m3 into
+  `corpus/vectors.json` + `index.json`, then upload both to R2 under
+  `relay/` (the live chat reads them from there). Re-run on corpus change.
+- Chat is retrieval-first: embed query → cosine top-20 → bge-reranker
+  top-5 → relay with sources. Zero generated advice, always.
 - Proportions are structural: `GAP` in `tools/site.py` is the single value
   for left-edge margin AND nav-to-body gap. serve.py imports it; the worker
   bundle generates `theme.js` from it at build. Never hardcode spacing.
