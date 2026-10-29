@@ -8,6 +8,7 @@ applies them to repo files (headers preserved), deletes the R2 keys,
 commits + pushes, rebuilds the static page + worker bundle, redeploys.
 Stdlib + boto3 (creds from /root/.r2-env).
 """
+import os
 import re
 import subprocess
 import sys
@@ -68,7 +69,13 @@ def main():
     sh("git", "commit", "-q", "-m",
        f"sync live edits ({len(applied)} files)")
     sh("git", "push", "-q", "origin", "main")
-    print("pushed. now: python3 tools/site.py && redeploy worker")
+    sh("python3", "tools/site.py")
+    sh("node", "worker/build.mjs")
+    env = dict(**os.environ)
+    env["CLOUDFLARE_API_TOKEN"] = open("/root/.cf-api-token").read().strip()
+    subprocess.run(["wrangler", "deploy"], cwd=str(ROOT / "worker"),
+                   capture_output=True, text=True, env=env, timeout=180)
+    print("rebuilt + redeployed")
 
 
 if __name__ == "__main__":
