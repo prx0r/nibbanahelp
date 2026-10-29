@@ -221,7 +221,13 @@ class H(BaseHTTPRequestHandler):
                 _items, _mat = _RELAY
                 _q = _np.array(_emb([clean[-1]["content"][:2000]])[0], dtype=_np.float32)
                 _q = _q / (_np.linalg.norm(_q) + 1e-9)
-                _order = _np.argsort(-(_mat @ _q))[:20]
+                # own words first: diary, then past chats, then others
+                _BOOST = {"own-tension": 1.35, "own-chat": 1.25,
+                          "canon": 1.1}
+                _sc = _mat @ _q
+                for _ii, _it in enumerate(_items):
+                    _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
+                _order = _np.argsort(-_sc)[:20]
                 _cands = [_items[int(i)] for i in _order]
                 # graph stage: roots of any matched tensions -> dharma-tech concept retrieval
                 try:

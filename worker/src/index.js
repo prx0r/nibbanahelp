@@ -118,11 +118,12 @@ async function matchPassages(env, query, k = 5) {
   if (!items.length) return [];
   const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
   const q = emb.data ? emb.data[0] : emb.result.data[0];
+  const BOOST = { "own-tension": 1.35, "own-chat": 1.25, "canon": 1.1 };
   const scored = [];
   for (const item of items) {
     const v = vecs[item.id];
     if (!v) continue;
-    scored.push([cosine(q, v), item]);
+    scored.push([cosine(q, v) * (BOOST[item.kind] || 1), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
   let cands = scored.slice(0, 20).map(([, item]) => item);

@@ -38,8 +38,11 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Relay index: `tools/build_index.py` embeds with bge-m3 into
   `corpus/vectors.json` + `index.json`, then upload both to R2 under
   `relay/` (the live chat reads them from there). Re-run on corpus change.
+  Index is incremental (new ids only; model change forces a full rebuild).
 - Chat is retrieval-first: embed query → cosine top-20 → bge-reranker
   top-5 → relay with sources. Zero generated advice, always.
+  Own words first: own-tension ×1.35, own-chat ×1.25, canon ×1.1 —
+  same weights in serve, worker, tension.py.
 - Proportions are structural: `GAP` in `tools/site.py` is the single value
   for left-edge margin AND nav-to-body gap. serve.py imports it; the worker
   bundle generates `theme.js` from it at build. Never hardcode spacing.

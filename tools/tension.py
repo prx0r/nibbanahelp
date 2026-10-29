@@ -45,12 +45,14 @@ def similar(qvec, items, mat, k=5, skip_id=None):
     q = np.array(qvec, dtype=np.float32)
     q = q / (np.linalg.norm(q) + 1e-9)
     scores = mat @ q
+    boost = {"own-tension": 1.35, "own-chat": 1.25, "canon": 1.1}
     order = np.argsort(-scores)
+    scored = sorted(((float(scores[int(i)]) * boost.get(items[int(i)].get("kind"), 1.0), int(i)) for i in order), reverse=True)
     out = []
-    for i in order:
-        if items[int(i)]["id"] == skip_id:
+    for s, i in scored:
+        if items[i]["id"] == skip_id:
             continue
-        out.append((items[int(i)], float(scores[int(i)])))
+        out.append((items[i], s))
         if len(out) == k:
             break
     return out

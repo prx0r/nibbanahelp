@@ -321,10 +321,27 @@ def tension_blocks(tensions):
 ROOTS = [("lobha", "greed"), ("dosa", "hate"), ("moha", "delusion")]
 
 
+def chat_counts():
+    """sessions/chat-*.json relayed tension ids -> count per tension stem."""
+    out = {}
+    for p in sorted((ROOT / "sessions").glob("chat-*.json")):
+        try:
+            rec = json.loads(p.read_text())
+        except (ValueError, OSError):
+            continue
+        for rid in rec.get("relayed", []):
+            s = str(rid).split(":")[-1].replace("tension-", "")
+            s = s.replace(".md", "").rsplit("/", 1)[-1]
+            out[s] = out.get(s, 0) + 1
+    return out
+
+
 def build_vis(days, tensions):
+    chats = chat_counts()
     w = {r: 0.0 for r, _ in ROOTS}
     for t in tensions:
         wt = 1.0 if t["status"] == "open" else 0.6
+        wt += 0.15 * chats.get(t["id"], 0)
         for r in t["roots"]:
             if r in w:
                 w[r] += wt
@@ -361,12 +378,13 @@ def build_vis(days, tensions):
                              f"y1=\"{130 + 30 + 18 * w[pr]:.0f}\" "
                              f"x2=\"{x}\" y2=\"{y - 8}\"{dash} "
                              f"stroke=\"black\" stroke-width=\"1\"/>")
-            parts.append(f"<circle cx=\"{x}\" cy=\"{y}\" r=\"9\" "
-                         f"fill=\"black\"/>")
-            parts.append(f"<text x=\"{x}\" y=\"{y + 26}\" text-anchor=\"middle\" "
-                         f"font-size=\"10\">{html.escape(t['id'])}</text>")
-            parts.append(f"<text x=\"{x}\" y=\"{y + 38}\" text-anchor=\"middle\" "
-                         f"font-size=\"9\">{html.escape(t['status'])}</text>")
+        parts.append(f"<circle cx=\"{x}\" cy=\"{y}\" r=\"9\" "
+                     f"fill=\"black\"/>")
+        parts.append(f"<text x=\"{x}\" y=\"{y + 26}\" text-anchor=\"middle\" "
+                     f"font-size=\"10\">{html.escape(t['id'])}</text>")
+        sub = t["status"] + (f" · {chats.get(t['id'], 0)} chats" if chats.get(t["id"]) else "")
+        parts.append(f"<text x=\"{x}\" y=\"{y + 38}\" text-anchor=\"middle\" "
+                     f"font-size=\"9\">{html.escape(sub)}</text>")
     parts.append("</svg>")
     return "\n".join(parts)
 
