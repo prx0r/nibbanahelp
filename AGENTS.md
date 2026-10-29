@@ -38,6 +38,10 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Proportions are structural: `GAP` in `tools/site.py` is the single value
   for left-edge margin AND nav-to-body gap. serve.py imports it; the worker
   bundle generates `theme.js` from it at build. Never hardcode spacing.
+- `site/index.html` and `worker/src/page.js` (+`files.js`, `anchors.js`) are
+  GENERATED. Never commit them stale: after any content edit run
+  `python3 tools/site.py` first, and `cd worker && node build.mjs` before
+  every deploy. Stale bundles are silent — verify with grep, not trust.
 - Tools are stdlib (+numpy/sklearn where noted). No new deps without asking.
 - Commit messages: lowercase, short. Push to origin main when asked or when
   a unit of work completes.
