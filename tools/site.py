@@ -168,7 +168,7 @@ document.addEventListener('click', function (e) {
   });
   el.style.display = 'none';
   el.parentNode.insertBefore(ta, el.nextSibling);
-  ta.focus();
+  try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
 });
 (function initViewer() {
   var blocks = document.querySelectorAll('#main [data-blk]');
@@ -332,6 +332,8 @@ PAGE = """<!doctype html>
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; }}
   #nav div {{ margin-bottom: .6rem; }}
+  #nav div a {{ display: block; padding: .7rem 0; font-size: 1rem; }}
+  body {{ touch-action: manipulation; }}
   #main {{ flex: 1; min-width: 0; }}
   .motto {{ font-style: italic; text-align: center; }}
   .motto-blk, pre.blk {{ cursor: text; }}
