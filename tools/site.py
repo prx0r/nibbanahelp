@@ -45,8 +45,9 @@ def motto_html(text: str) -> str:
     out = []
     for i, ln in enumerate(lines):
         c = SHADES[min(n - 1 - i, 4)]
-        out.append(f'<p class=motto style="color:{c}">'
-                   f'"{inline3(html.escape(ln))}"</p>')
+        out.append(f"<div class=motto-line><p class=motto "
+                   f"style=\"color:{c}\">\"{inline3(html.escape(ln))}\"</p>"
+                   f"</div>")
     return "\n".join(out)
 
 
@@ -97,7 +98,7 @@ function renderMotto(src) {
   var n = lines.length;
   return lines.map(function (ln, i) {
     var c = shades[Math.min(n - 1 - i, 4)];
-    return '<p class=motto style="color:' + c + '">"' + inline3(ln) + '"</p>';
+    return '<div class=motto-line><p class=motto style="color:' + c + '">"' + inline3(ln) + '"</p></div>';
   }).join('\n');
 }
 function renderFor(el, text) {
@@ -348,6 +349,7 @@ PAGE = """<!doctype html>
   #main {{ flex: 1; min-width: 0; }}
   pre.blk {{ width: fit-content; max-width: 100%; cursor: text; }}
   .motto-blk {{ text-align: center; cursor: default; }}
+  .motto-line {{ text-align: center; }}
   .motto {{ display: inline-block; font-style: italic; text-align: center;
     cursor: text; }}
   textarea {{ width: 100%; box-sizing: border-box; font-family: monospace;

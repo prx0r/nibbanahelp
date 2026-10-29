@@ -15,6 +15,7 @@ function page(title, inner) {
       `pre{white-space:pre-wrap;font-family:monospace}` +
       `pre.blk{width:fit-content;max-width:100%;cursor:text}` +
       `.motto-blk{text-align:center;cursor:default}` +
+      `.motto-line{text-align:center}` +
       `.motto{display:inline-block;font-style:italic;text-align:center;cursor:text}` +
       `#wrap{display:flex}` +
       `#nav{flex-shrink:0;padding-top:1rem;padding-right:${GAP};` +
