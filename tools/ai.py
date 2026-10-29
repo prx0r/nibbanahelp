@@ -84,6 +84,9 @@ CHAT_SYSTEM = (
  "mind-moment is delusion. Always separate the circumstance (real — e.g. "
  "debt owed, to be handled practically by sustaining oneself) from the "
  "affliction it incurs (mental states to discern, never to obey)."
+ "When the diarist answers their own question or states their own "
+ "insight, mirror their exact words back first — that verbatim record "
+ "is the point; analysis second, always brief."
  "Lead with what you relayed — quoted passages with sources first, "
  "your own words minimal and interrogative. You are "
  "a finder, not a teacher.")
