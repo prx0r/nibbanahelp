@@ -77,15 +77,47 @@ function up(day){
   i.type='file';
   i.onchange=function(){
     if(!this.files.length)return;
-    var fd=new FormData();
-    fd.append('file',this.files[0]);
-    fd.append('day',String(day));
-    var today=parseInt(document.body.getAttribute('data-today')||'1',10);
-    if(day<today)fd.append('backfill','1');
-    fetch('upload',{method:'POST',body:fd}).then(function(){location.reload();});
+    var f=this.files[0];
+    var isText=/\.(md|txt)$/i.test(f.name);
+    var box=document.createElement('div');
+    var lab=document.createElement('p');
+    lab.textContent=f.name+(isText?' — pick a kind:':'');
+    box.appendChild(lab);
+    var sel=null;
+    if(isText){
+      sel=document.createElement('select');
+      ['diary','essay','poem'].forEach(function(k){
+        var o=document.createElement('option');o.value=k;o.textContent=k;
+        sel.appendChild(o);});
+      box.appendChild(sel);
+    }
+    var btn=document.createElement('button');
+    btn.textContent='upload';
+    var st=document.createElement('span');
+    box.appendChild(btn);
+    box.appendChild(document.createTextNode(' '));
+    box.appendChild(st);
+    btn.onclick=function(){
+      var fd=new FormData();
+      fd.append('file',f);
+      fd.append('day',String(day));
+      var today=parseInt(document.body.getAttribute('data-today')||'1',10);
+      if(day<today)fd.append('backfill','1');
+      if(sel)fd.append('kind',sel.value);
+      st.textContent='uploading\u2026';
+      fetch('upload',{method:'POST',body:fd}).then(function(r){
+        if(!r.ok)throw 0;
+        return r.text();
+      }).then(function(){
+        st.textContent='uploaded'+(sel?' ('+sel.value+')':'')+' \u2014 reloading\u2026';
+        setTimeout(function(){location.reload();},1200);
+      }).catch(function(){st.textContent='upload failed, try again';});
+    };
+    document.getElementById('nav').appendChild(box);
   };
   i.click();
 }
+
 function t(id) {
   var e = document.getElementById(id);
   e.style.display = e.style.display === 'none' ? 'block' : 'none';

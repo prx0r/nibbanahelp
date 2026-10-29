@@ -148,7 +148,7 @@ async function matchPassages(env, query, k = 5) {
   }
   let qn = Math.sqrt(q.reduce((s2, x) => s2 + x * x, 0)) || 1e-9;
   for (let i = 0; i < q.length; i++) q[i] /= qn;
-  const BOOST = { "own-tension": 1.35, "canon": 1.2 };
+  const BOOST = { "own-tension": 1.35, "canon": 1.2, "teacher-answer": 1.2, "forum-answer": 1.15 };
   const raw = {};
   const scored = [];
   for (const item of items) {
@@ -159,7 +159,9 @@ async function matchPassages(env, query, k = 5) {
     scored.push([s * (BOOST[item.kind] || 1), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
-  let cands = scored.slice(0, 30).map(([, item]) => item);
+  let cands = scored.slice(0, 30).map(([, item]) => item)
+    .filter((item) => !(item.kind === "own-chat" &&
+      query.slice(0, 120) in ((item.text || "").slice(0, 300))));
   // graph stage: roots of matched tensions -> concept-constrained passages
   try {
     const roots = new Set();
@@ -194,7 +196,10 @@ async function matchPassages(env, query, k = 5) {
       .filter((r) => Number.isInteger(r.id) && r.id >= 0 && r.id < cands.length)
       .map((r) => [r.score, cands[r.id]]);
     if (pairs.length) {
-      pairs.sort((a, b) => b[0] - a[0]);
+      pairs = pairs.map(([score, item]) =>
+        [score * (BOOST[item.kind] || 1),
+         (BOOST[item.kind] || 1) > 1 ? 0 : 1, item]);
+      pairs.sort((a, b) => (a[1] - b[1]) || (b[0] - a[0]));
       ranked = pairs;
     }
   } catch (e) { /* fall back to cosine order */ }
@@ -203,20 +208,21 @@ async function matchPassages(env, query, k = 5) {
   const tierOf = (c) => {
     const k = c.kind || "";
     if (k === "own-tension") return "anchor";
-    if (k === "lived-log") return "lived";
+    if (k === "lived-log" || k === "forum-answer") return "lived";
     if (k === "dialogue") return "dialogue";
-    if (k === "canon" || k === "roots-doc" || k === "graph") return "lineage";
+    if (k === "canon" || k === "roots-doc" || k === "graph" || k === "teacher-answer") return "lineage";
     return "ownpast";
   };
   const slots = { anchor: 1, lived: 3, dialogue: 2, lineage: 1, ownpast: 1 };
   const seen = new Set();
   const out = [];
-  for (const [rrs, c] of ranked) {
+  for (const [rrs, pri, c] of ranked) {
     const t = tierOf(c);
     if (!(slots[t] > 0)) continue;
     const floor = t === "anchor" ? 0.22 : 0.28;
     if ((raw[c.id] || 0) < floor && !(c.kind === "graph")) continue;
-    if (rrs < 0.12 && t !== "anchor" && !(c.kind === "graph")) continue;
+    const curated = String(c.id || "").startsWith("curated:") && (raw[c.id] || 0) >= 0.5;
+    if (rrs < 0.12 && t !== "anchor" && !(c.kind === "graph") && !curated) continue;
     const key = stemKey(c.id);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -224,7 +230,7 @@ async function matchPassages(env, query, k = 5) {
     out.push(c);
     if (out.length >= 6) break;
   }
-  const TIER = { "canon": 0, "roots-doc": 1, "graph": 1, "anchor": 2,
+  const TIER = { "canon": 0, "lineage": 1, "roots-doc": 1, "graph": 1, "anchor": 2,
                  "ownpast": 3, "lived": 4, "dialogue": 5 };
   out.sort((a, b) => (TIER[tierOf(a)] ?? 9) - (TIER[tierOf(b)] ?? 9));
   return out.slice(0, k);
@@ -343,11 +349,13 @@ export default {
       const day = String(form.get("day") || "");
       const backfill = form.get("backfill") === "1";
       const note = String(form.get("note") || "").slice(0, 200);
+      const kind = ["diary", "essay", "poem"].includes(String(form.get("kind")))
+        ? String(form.get("kind")) : null;
       const key = `pending/upload/${ts}-${safe}`;
       await env.BRAIN.put(key, await file.arrayBuffer());
       await env.BRAIN.put(
         key.replace("pending/upload/", "pending/uploadmeta/"),
-        JSON.stringify({ day, backfill, note, name: safe }));
+        JSON.stringify({ day, backfill, note, name: safe, kind }));
       return new Response("uploaded",
         { headers: { "content-type": "text/plain" } });
     }

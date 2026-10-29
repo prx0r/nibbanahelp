@@ -67,13 +67,45 @@ def main():
             while dest.exists():
                 dest = ROOT / "uploads" / f"{dest.stem}-{n}{dest.suffix}"
                 n += 1
-            dest.write_bytes(blob)
+            kind = meta.get("kind")
             try:
-                sys.path.insert(0, str(ROOT / "tools"))
-                from characterise import classify_bytes
-                kind = classify_bytes(blob, dest.name)
+                day_val_probe = int(meta.get("day") or 0)
             except Exception:
-                kind = None
+                day_val_probe = 0
+            if kind == "diary" and day_val_probe:
+                entry = None
+                for ep in sorted((ROOT / "entries").glob("*.md")):
+                    if ep.name.startswith("_"):
+                        continue
+                    et = ep.read_text()
+                    m = re.search(r"^day:\s*(\S+)", et.split("---")[0], re.M)
+                    if m and m.group(1) == str(day_val_probe):
+                        entry = ep
+                        break
+                if entry is None:
+                    entry = ROOT / "entries" / f"day-{day_val_probe:02d}.md"
+                    head_new = (f"day: {day_val_probe}\nvisibility: public\n"
+                                "---\n")
+                else:
+                    et = entry.read_text()
+                    head_new = et.split("---", 1)[0] + "---\n" if "---" in et else ""
+                body_txt = blob.decode("utf-8", "ignore")
+                if body_txt.startswith("---"):
+                    body_txt = body_txt.split("---", 1)[1].lstrip("\n")
+                entry.write_text(head_new + body_txt.rstrip() + "\n")
+                s3.delete_object(Bucket=B, Key=key)
+                s3.delete_object(Bucket=B, Key=meta_key)
+                applied.append(str(entry.relative_to(ROOT)))
+                print("diary overwrite:", entry.name, "day", day_val_probe)
+                continue
+            if kind is None:
+                try:
+                    sys.path.insert(0, str(ROOT / "tools"))
+                    from characterise import classify_bytes
+                    kind = classify_bytes(blob, dest.name)
+                except Exception:
+                    kind = "essay"
+            dest.write_bytes(blob)
             from datetime import datetime as _dt, timezone as _tz
             DAY1 = __import__("datetime").date(2026, 10, 28)
             now = _dt.now(_tz.utc)

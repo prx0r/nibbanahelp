@@ -236,12 +236,16 @@ class H(BaseHTTPRequestHandler):
                 _raw = (_mat @ _q).astype(float)
                 _rawmap = { _items[int(_i)]["id"]: float(_raw[int(_i)]) for _i in range(len(_items)) }
                 # own words first: diary, then past chats/notes, then others
-                _BOOST = {"own-tension": 1.35, "canon": 1.2}
+                _BOOST = {"own-tension": 1.35, "canon": 1.2,
+                          "teacher-answer": 1.2, "forum-answer": 1.15}
                 _sc = _raw.copy()
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
                 _order = _np.argsort(-_sc)[:30]
-                _cands = [_items[int(i)] for i in _order]
+                _cands = [_items[int(i)] for i in _order
+                          if not (_items[int(i)].get("kind") == "own-chat"
+                                  and clean[-1]["content"][:120] in
+                                  (_items[int(i)].get("text") or "")[:300])]
                 # graph stage: roots of any matched tensions -> dharma-tech concept retrieval
                 try:
                     sys.path.insert(0, str(ROOT / "tools"))
@@ -284,25 +288,31 @@ class H(BaseHTTPRequestHandler):
                     k = c.get("kind", "")
                     if k == "own-tension":
                         return "anchor"
-                    if k == "lived-log":
+                    if k in ("lived-log", "forum-answer"):
                         return "lived"
                     if k == "dialogue":
                         return "dialogue"
-                    if k in ("canon", "roots-doc"):
+                    if k in ("canon", "roots-doc", "teacher-answer"):
                         return "lineage"
                     return "ownpast"
-                _ranked = [(_s, _cands[i]) for _s, i in _rrpairs]
+                _ranked = sorted(
+                    ((_s * _BOOST.get(_cands[i].get("kind"), 1.0),
+                      0 if _BOOST.get(_cands[i].get("kind"), 1.0) > 1 else 1,
+                      _cands[i]) for _s, i in _rrpairs),
+                    key=lambda x: (x[1], -x[0]))
                 _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1,
                              "dialogue": 2}
                 _seen, relay, sources = set(), [], []
-                for _rrs, _c in _ranked:
+                for _rrs, _pri, _c in _ranked:
                     _t = _tier(_c)
                     if _slots.get(_t, 0) <= 0:
                         continue
                     _floor = 0.22 if _t == "anchor" else 0.28
                     if _rawmap.get(_c["id"], 0) < _floor:
                         continue
-                    if _rrs < 0.12 and _t != "anchor":
+                    _curated = (str(_c.get("id", "")).startswith("curated:")
+                                and _rawmap.get(_c["id"], 0) >= 0.5)
+                    if _rrs < 0.12 and _t != "anchor" and not _curated:
                         continue
                     _key = _c["id"].split(":")[-1].replace("tension-", "")
                     if _key in _seen:
@@ -312,8 +322,8 @@ class H(BaseHTTPRequestHandler):
                     relay.append(_c)
                     if len(relay) >= 6:
                         break
-                _TIER_ORDER = {"canon": 0, "roots-doc": 1, "graph": 1,
-                               "anchor": 2, "ownpast": 3,
+                _TIER_ORDER = {"canon": 0, "lineage": 1, "roots-doc": 1,
+                               "graph": 1, "anchor": 2, "ownpast": 3,
                                "lived": 4, "dialogue": 5}
                 relay.sort(key=lambda c: _TIER_ORDER.get(_tier(c), 9))
                 sources = [{"label": r["label"], "url": r["url"],
@@ -471,14 +481,48 @@ class H(BaseHTTPRequestHandler):
         except Exception:
             kind = None
         posted_day = None
+        posted_kind = None
         for _ch in raw.split(bound):
             if b'name="day"' in _ch:
                 _b = _ch.split(b"\r\n\r\n", 1)[-1].rstrip(b"\r\n--")
                 _v = _b.decode("utf-8", "ignore").strip()
                 if _v.isdigit():
                     posted_day = int(_v)
+            if b'name="kind"' in _ch:
+                _b = _ch.split(b"\r\n\r\n", 1)[-1].rstrip(b"\r\n--")
+                _v = _b.decode("utf-8", "ignore").strip()
+                if _v in ("diary", "essay", "poem"):
+                    posted_kind = _v
         day_val = posted_day or day_of(now.date())
         backfill = bool(backfill) or day_val < day_of(now.date())
+        if posted_kind == "diary":
+            entry = None
+            for ep in sorted((ROOT / "entries").glob("*.md")):
+                if ep.name.startswith("_"):
+                    continue
+                et = ep.read_text()
+                m = re.search(r"^day:\s*(\S+)", et.split("---")[0], re.M)
+                if m and m.group(1) == str(day_val):
+                    entry = ep
+                    break
+            if entry is None:
+                entry = ROOT / "entries" / f"day-{day_val:02d}.md"
+                head_new = f"day: {day_val}\nvisibility: public\n---\n"
+            else:
+                et = entry.read_text()
+                head_new = et.split("---", 1)[0] + "---\n" if "---" in et else ""
+            body_txt = blob.decode("utf-8", "ignore")
+            if body_txt.startswith("---"):
+                body_txt = body_txt.split("---", 1)[1].lstrip("\n")
+            entry.write_text(head_new + body_txt.rstrip() + "\n")
+            git("add", str(entry.relative_to(ROOT)))
+            git("commit", "-q", "-m", f"diary upload day {day_val}")
+            code, _ = git("push", "-q", "origin", "main")
+            extra = "" if code == 0 else " (committed locally)"
+            self._send(f"<p>diary saved for day {day_val}{extra}</p>"
+                       "<p><a href='/'>back</a></p>")
+            return
+        kind = posted_kind or kind
         rows = manifest()
         rows.append({"file": dest.name,
                      "uploaded_at": now.isoformat(timespec="seconds"),

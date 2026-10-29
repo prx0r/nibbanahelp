@@ -30,13 +30,14 @@
     font-size: 1rem; }
 </style>
 </head>
-<body data-today="2">
+<body data-today="3">
 <div class="motto-blk" data-f="motto.txt" data-kind="motto" data-raw="with each and every breath i create the conditions for liberation
 the only delusion is that nibbana cannot be attained in this very moment"><div class=motto-line><p class=motto style="color:#555">"with each and every breath i create the conditions for liberation"</p></div>
 <div class=motto-line><p class=motto style="color:#333">"the only delusion is that nibbana cannot be attained in this very moment"</p></div></div>
 <div id=wrap><div id=nav>
 <a href="/chat">chat</a><br><a href="/vis">vis</a><br><br>
 <button class=daybox onclick="t('k1')">1</button><div id="k1"><a href="#" data-show="d1-e0">diary</a><br><a href="#" data-show="d1-s0">essay</a><br>diary <a href="uploads/1793262126825-current tensions">1793262126825-current tensions</a></div><p><a href="#" onclick="up(1);return false">+</a></p>
+<button class=daybox onclick="t('k2')">2</button><div id="k2"><a href="#" data-show="d2-e0">diary</a><br>essay <a href="uploads/1793263255797-up-probe.txt">1793263255797-up-probe.txt</a></div><p><a href="#" onclick="up(2);return false">+</a></p>
 </div><div id=main><div data-blk="d1-e0"><span id="d1-e0"></span><pre class="blk" data-f="entries/day-01-attaining-nibbana.md" data-raw="# Day 1 of attaining nibbana
 
 ## Current tensions
@@ -162,7 +163,8 @@ Instead of eating a whole slice of cake, maybe I eat 3 quarters, or even just gi
 
 Now next time I have a slice of cake I don&#x27;t eat it on autopilot. This might turn into having half a slice. Maybe I order a flapjack instead. Maybe even a banana. Then maybe I order nothing at all. And stop showing up at the cafe.
 
-Because you weren&#x27;t actually hungry.</pre></div><pre class="blk" data-f="tensions/coffee-addiction.md" data-raw="I am addicted to coffee. I said I wasn&#x27;t going to order it, but now it&#x27;s getting to it and I&#x27;m pretty sure I&#x27;m going to order it. I am going to also order tea and then switch to that instead of the coffee. I am going to order the coffee, as a final goodbye.
+Because you weren&#x27;t actually hungry.</pre></div>
+<div data-blk="d2-e0"><span id="d2-e0"></span><pre class="blk" data-f="entries/day-02.md" data-raw="Day 2 test diary body. The night question resolved: sit once in the day too.">Day 2 test diary body. The night question resolved: sit once in the day too.</pre></div><pre class="blk" data-f="tensions/coffee-addiction.md" data-raw="I am addicted to coffee. I said I wasn&#x27;t going to order it, but now it&#x27;s getting to it and I&#x27;m pretty sure I&#x27;m going to order it. I am going to also order tea and then switch to that instead of the coffee. I am going to order the coffee, as a final goodbye.
 
 I think this is the beautiful part: I know I shouldn&#x27;t do it, I&#x27;m going to do it. Tomorrow will be easier to quit because I have fed the wolf today. That&#x27;s my logic right now — it&#x27;s like how a junky justifies, but I am a junky, so that&#x27;s what I&#x27;m going to do.
 
@@ -216,15 +218,47 @@ function up(day){
   i.type='file';
   i.onchange=function(){
     if(!this.files.length)return;
-    var fd=new FormData();
-    fd.append('file',this.files[0]);
-    fd.append('day',String(day));
-    var today=parseInt(document.body.getAttribute('data-today')||'1',10);
-    if(day<today)fd.append('backfill','1');
-    fetch('upload',{method:'POST',body:fd}).then(function(){location.reload();});
+    var f=this.files[0];
+    var isText=/\.(md|txt)$/i.test(f.name);
+    var box=document.createElement('div');
+    var lab=document.createElement('p');
+    lab.textContent=f.name+(isText?' — pick a kind:':'');
+    box.appendChild(lab);
+    var sel=null;
+    if(isText){
+      sel=document.createElement('select');
+      ['diary','essay','poem'].forEach(function(k){
+        var o=document.createElement('option');o.value=k;o.textContent=k;
+        sel.appendChild(o);});
+      box.appendChild(sel);
+    }
+    var btn=document.createElement('button');
+    btn.textContent='upload';
+    var st=document.createElement('span');
+    box.appendChild(btn);
+    box.appendChild(document.createTextNode(' '));
+    box.appendChild(st);
+    btn.onclick=function(){
+      var fd=new FormData();
+      fd.append('file',f);
+      fd.append('day',String(day));
+      var today=parseInt(document.body.getAttribute('data-today')||'1',10);
+      if(day<today)fd.append('backfill','1');
+      if(sel)fd.append('kind',sel.value);
+      st.textContent='uploading\u2026';
+      fetch('upload',{method:'POST',body:fd}).then(function(r){
+        if(!r.ok)throw 0;
+        return r.text();
+      }).then(function(){
+        st.textContent='uploaded'+(sel?' ('+sel.value+')':'')+' \u2014 reloading\u2026';
+        setTimeout(function(){location.reload();},1200);
+      }).catch(function(){st.textContent='upload failed, try again';});
+    };
+    document.getElementById('nav').appendChild(box);
   };
   i.click();
 }
+
 function t(id) {
   var e = document.getElementById(id);
   e.style.display = e.style.display === 'none' ? 'block' : 'none';
