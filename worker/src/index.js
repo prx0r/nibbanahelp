@@ -1,6 +1,5 @@
 import PAGE from "./page.js";
 import FILES from "./files.js";
-import ANCHORS from "./anchors.js";
 
 const ALLOWED = /^(entries|essays|tensions)\/[^/]+\.md$|^motto\.txt$/;
 
@@ -40,15 +39,8 @@ function esc(s) {
 }
 
 function livePage() {
-  const withEdits = PAGE.replace(
-    /<span id="(d\d+-[es]\d+)"><\/span>/g,
-    (m, id) =>
-      ANCHORS[id]
-        ? `${m}<p><a href="/edit?f=${ANCHORS[id]}">edit</a></p>`
-        : m
-  );
-  const m = withEdits.match(/<body>([\s\S]*)<\/body>/);
-  return m ? m[1] : withEdits;
+  const m = PAGE.match(/<body>([\s\S]*)<\/body>/);
+  return m ? m[1] : PAGE;
 }
 
 export default {
@@ -57,24 +49,6 @@ export default {
 
     if (url.pathname === "/") {
       return page("nibbanahelp", livePage());
-    }
-
-    if (url.pathname === "/edit") {
-      const f = url.searchParams.get("f") || "";
-      if (!ALLOWED.test(f) || !(f in FILES)) {
-        return new Response("no such file", { status: 404 });
-      }
-      let body = FILES[f];
-      const pend = await env.BRAIN.get("pending/" + f);
-      if (pend) body = await pend.text();
-      return page(
-        "edit " + f,
-        `<form method=post action=/save>` +
-          `<input type=hidden name=f value="${f}">` +
-          `<textarea name=body rows=30>${esc(body)}</textarea><br>` +
-          `<button>save</button></form>` +
-          `<p><a href='/'>back (discard)</a></p>`
-      );
     }
 
     if (url.pathname === "/save" && req.method === "POST") {
