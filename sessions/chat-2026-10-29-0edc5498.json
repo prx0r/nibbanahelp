@@ -1,0 +1,21 @@
+{
+ "date": "2026-10-29",
+ "via": "serve",
+ "messages": [
+  {
+   "role": "user",
+   "content": "idk what to do about this debt hanging over me"
+  },
+  {
+   "role": "assistant",
+   "content": "What is the feeling-tone of the mind when it thinks about this debt? Is there a sense of restlessness, worry, or aversion? \n\nAs Richard Ze noted, \"It's easier if you let those perceptions arise and pass away and also to have beliefs challenged.\" — https://www.dharmaoverground.org/discussion/-/message_boards/message/4651886"
+  }
+ ],
+ "relayed": [
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/4651886",
+  "tension:debt-1500",
+  "tension-debt-1500",
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/23113932",
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/24861744"
+ ]
+}
