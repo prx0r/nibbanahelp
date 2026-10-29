@@ -33,7 +33,8 @@ _site_spec = _ilu.spec_from_file_location(
     "nibsite", Path(__file__).resolve().parent / "site.py")
 _nibsite = _ilu.module_from_spec(_site_spec)
 _site_spec.loader.exec_module(_nibsite)
-header, raw = _nibsite.header, _nibsite.raw
+header, raw, collect, sidebar, content = (_nibsite.header, _nibsite.raw,
+    _nibsite.collect, _nibsite.sidebar, _nibsite.content)
 
 ROOT = Path(__file__).resolve().parent.parent
 UPLOADS = ROOT / "uploads"
@@ -46,6 +47,14 @@ CSS = ("body{background:#fff;color:#000;"
        "margin:0;padding:0 1rem}"
        "a{color:#000}"
        "pre{white-space:pre-wrap;font-family:monospace}"
+       "#wrap{display:flex}"
+       "#nav{width:12rem;flex-shrink:0;padding-top:1rem}"
+       "#nav button{display:block;width:2.2rem;height:2.2rem;"
+       "background:#fff;color:#000;border:1px solid #000;"
+       "font-family:monospace;font-size:1rem;cursor:pointer;"
+       "margin-bottom:.3rem}"
+       "#nav div{font-size:.8rem;margin-bottom:.6rem}"
+       "#main{flex:1;min-width:0}"
        "input[type=text]{width:100%;font-family:monospace;font-size:1rem;"
        "border:1px solid #000;padding:.5rem;background:#fff;color:#000}"
        "textarea{width:100%;box-sizing:border-box;font-family:monospace;"
@@ -103,52 +112,32 @@ def split_body(text: str):
 
 
 def page():
-    days = {}
-    for pat in ("entries/*.md", "essays/*.md"):
-        for p in sorted(ROOT.glob(pat)):
-            if p.name.startswith("_"):
-                continue
-            h, body = header(p)
-            if "day" in h:
-                days.setdefault(h["day"], []).append((p, h, body))
-    out = ["<p>nibbanahelp</p>",
-           "<form method=post action=/upload enctype=multipart/form-data>"
-           "<input type=file name=file><br>"
-           "<label><input type=checkbox name=backfill value=1> "
-           "backfill</label>"
-           "<label>note <input type=text name=note></label><br>"
-           "<button>upload</button></form>"]
+    days, tensions = collect()
+    forms = ["<form method=post action=/upload enctype=multipart/form-data>"
+             "<input type=file name=file><br>"
+             "<label><input type=checkbox name=backfill value=1> "
+             "backfill</label>"
+             "<label>note <input type=text name=note></label><br>"
+             "<button>upload</button></form>"]
     td, tf = today_file()
     if tf is not None:
         _head, tbody = split_body(tf.read_text())
-        out.append(f"<p>day {td} — today, edit below</p>"
-                   "<form method=post action=/save-today>"
-                   f"<textarea name=body rows=30 style='width:100%'>"
-                   f"{html.escape(tbody)}</textarea><br>"
-                   "<button>save today</button></form>"
-                   "<form method=post action=/new-day>"
-                   "<button>submit — start a new day</button></form>")
-    up_by_day = {}
-    for r in manifest():
-        up_by_day.setdefault(str(r.get("day", "?")), []).append(r)
-    if up_by_day:
-        for d in sorted(up_by_day, key=lambda x: int(x) if x.isdigit() else 0):
-            for r in up_by_day[d]:
-                flag = " [backfill]" if r.get("backfill") else ""
-                note = f" {r['note']}" if r.get("note") else ""
-                out.append(f"<p><a href=\"/files/{r['file']}\">{r['file']}"
-                           f"</a>{flag} {r['uploaded_at']}{note}</p>")
-    for day in sorted(days, key=int):
-        for p, h, body in days[day]:
-            out.append(raw(body))
-    for p in sorted((ROOT / "tensions").glob("*.md")):
-        h, body = header(p)
-        if h.get("status") == "open":
-            out.append(raw(body))
+        forms.append("<form method=post action=/save-today>"
+                     f"<textarea name=body rows=30 style='width:100%'>"
+                     f"{html.escape(tbody)}</textarea><br>"
+                     "<button>save today</button></form>"
+                     "<form method=post action=/new-day>"
+                     "<button>submit — start a new day</button></form>")
+    nav = sidebar(days, lambda fn: f"/files/{fn}")
+    body = (content(days) + "\n".join(raw(t[1]) for t in tensions))
+    main = "\n".join(forms) + body
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
             f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"
-            + "".join(out) + "</body></html>")
+            f"<div id=wrap>{nav}<div id=main>{main}</div></div>"
+            "<script>function t(id){var e=document.getElementById(id);"
+            "e.style.display=e.style.display==='none'?'block':'none';}"
+            "</script></body></html>")
 
 
 def git(*args):

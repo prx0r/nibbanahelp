@@ -5,15 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>nibbanahelp</title>
 <style>
-  body { background: #fff; color: #000;
-         font-family: monospace;
+  body { background: #fff; color: #000; font-family: monospace;
          margin: 0; padding: 0 1rem; }
   a { color: #000; }
   pre { white-space: pre-wrap; font-family: monospace; }
+  #wrap { display: flex; }
+  #nav { width: 12rem; flex-shrink: 0; padding-top: 1rem; }
+  #nav button { display: block; width: 2.2rem; height: 2.2rem;
+    background: #fff; color: #000; border: 1px solid #000;
+    font-family: monospace; font-size: 1rem; cursor: pointer;
+    margin-bottom: .3rem; }
+  #nav div { font-size: .8rem; margin-bottom: .6rem; }
+  #main { flex: 1; min-width: 0; }
 </style>
 </head>
 <body>
-<pre><strong>Day 1 of attaining nibbana</strong>
+<div id=wrap><div id=nav>
+<button onclick="t('k1')">1</button><div id="k1">diary <a href="#d1-e0">day-01-attaining-nibbana</a><br>essay <a href="#d1-s0">day-01-what-nibbana-is-like</a></div>
+</div><div id=main><span id="d1-e0"></span><pre><strong>Day 1 of attaining nibbana</strong>
 
 <strong>Current tensions</strong>
 
@@ -33,7 +42,8 @@ I am bisexual but not openly. I&#x27;m sure a lot of my unconscious energy is sp
 
 - `../tensions/debt-1500.md`
 - `../tensions/coffee-addiction.md`
-- `../tensions/hidden-sexuality-shame.md`</pre><pre><strong>What nibbana is like</strong>
+- `../tensions/hidden-sexuality-shame.md`</pre>
+<span id="d1-s0"></span><pre><strong>What nibbana is like</strong>
 
 Some alien process with stamina bar inside head.
 
@@ -79,12 +89,20 @@ Because you weren&#x27;t actually hungry.</pre><pre>I am addicted to coffee. I s
 
 I think this is the beautiful part: I know I shouldn&#x27;t do it, I&#x27;m going to do it. Tomorrow will be easier to quit because I have fed the wolf today. That&#x27;s my logic right now — it&#x27;s like how a junky justifies, but I am a junky, so that&#x27;s what I&#x27;m going to do.
 
-Strategy from day-01 notes: replacement, not suppression. Same ritual, less harmful object. Coffee now, tea next, then maybe nothing.</pre><pre>I am in debt, 1500 pounds, yet instead of focusing on making money I am making dharma content. Why? Because nibbana is only attained now.
+Strategy from day-01 notes: replacement, not suppression. Same ritual, less harmful object. Coffee now, tea next, then maybe nothing.</pre>
+<pre>I am in debt, 1500 pounds, yet instead of focusing on making money I am making dharma content. Why? Because nibbana is only attained now.
 
-The tension: survival pressure says earn; practice says the path can&#x27;t wait for solvency. Both feel true. Logging it instead of resolving it.</pre><pre>I am bisexual but not openly. I&#x27;m sure a lot of my unconscious energy is spent protecting myself from feeling the shame of this and feeling like I need to act a certain way.
+The tension: survival pressure says earn; practice says the path can&#x27;t wait for solvency. Both feel true. Logging it instead of resolving it.</pre>
+<pre>I am bisexual but not openly. I&#x27;m sure a lot of my unconscious energy is spent protecting myself from feeling the shame of this and feeling like I need to act a certain way.
 
 This is why nibbana is so tough I think, because necessarily it means you must confront the entire psyche — nibbana is the complete emptying of the hard drive.
 
-No resolution yet. Named and logged.</pre>
+No resolution yet. Named and logged.</pre></div></div>
+<script>
+function t(id) {
+  var e = document.getElementById(id);
+  e.style.display = e.style.display === 'none' ? 'block' : 'none';
+}
+</script>
 </body>
 </html>

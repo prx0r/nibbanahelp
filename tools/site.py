@@ -52,64 +52,131 @@ def card(title, meta, body_html):
             f'<div class="meta">{meta}</div>{body_html}</article>')
 
 
-def main():
+UKIND = {".mp3": "voice", ".wav": "voice", ".m4a": "voice",
+         ".ogg": "voice", ".mp4": "video", ".mov": "video",
+         ".webm": "video", ".md": "note", ".txt": "note"}
+
+
+def ukind(name):
+    return UKIND.get(Path(name).suffix.lower(), "file")
+
+
+def daykey(d):
+    return int(d) if str(d).isdigit() else 0
+
+
+def collect():
     days = {}
     for pattern in ("entries/*.md", "essays/*.md"):
-        for p in sorted((ROOT).glob(pattern)):
+        for p in sorted(ROOT.glob(pattern)):
             if p.name.startswith("_"):
                 continue
             h, body = header(p)
             if "day" not in h:
                 continue
-            days.setdefault(h["day"], []).append((p, h, body))
-    tensions = []
-    for p in sorted((ROOT / "tensions").glob("*.md")):
-        h, body = header(p)
-        tensions.append((p, h, body))
-
-    parts = []
-    for day in sorted(days, key=int):
-        for p, h, body in days[day]:
-            parts.append(raw(body))
-    for p, h, body in tensions:
-        if h.get("status") != "open":
-            continue
-        parts.append(raw(body))
+            d = days.setdefault(h["day"], {"entries": [], "essays": [],
+                                           "uploads": []})
+            kind = "essays" if p.parent.name == "essays" else "entries"
+            d[kind].append((p.stem, body))
     man = ROOT / "uploads" / "manifest.json"
     if man.is_file():
         try:
             rows = json.loads(man.read_text())
         except json.JSONDecodeError:
             rows = []
-        if rows:
-            usec = ["<p>uploaded</p>"]
-            for r in rows:
-                flag = " [backfill]" if r.get("backfill") else ""
-                usec.append(f"<p><a href=\"/files/{r['file']}\">{r['file']}"
-                            f"</a>{flag} {r['uploaded_at']}</p>")
-            parts.append("\n".join(usec))
+        for r in rows:
+            days.setdefault(str(r.get("day", "?")),
+                            {"entries": [], "essays": [],
+                             "uploads": []})["uploads"].append(r)
+    tensions = []
+    for p in sorted((ROOT / "tensions").glob("*.md")):
+        h, body = header(p)
+        if h.get("status") == "open":
+            tensions.append((h.get("id", p.stem), body))
+    return days, tensions
+
+
+def sidebar(days, link_uploads):
+    s = ["<div id=nav>"]
+    order = sorted(days, key=daykey)
+    for i, day in enumerate(order):
+        d = days[day]
+        kids = []
+        for n, (stem, _b) in enumerate(d["entries"]):
+            kids.append(f"diary <a href=\"#d{day}-e{n}\">{stem}</a>")
+        for n, (stem, _b) in enumerate(d["essays"]):
+            kids.append(f"essay <a href=\"#d{day}-s{n}\">{stem}</a>")
+        for r in d["uploads"]:
+            kids.append(f"{ukind(r['file'])} "
+                        f"<a href=\"{link_uploads(r['file'])}\">"
+                        f"{r['file']}</a>")
+        open_style = "" if i == len(order) - 1 else " style='display:none'"
+        s.append(f"<button onclick=\"t('k{day}')\">{day}</button>"
+                 f"<div id=\"k{day}\"{open_style}>"
+                 + "<br>".join(kids) + "</div>")
+    s.append("</div>")
+    return "\n".join(s)
+
+
+def content(days):
+    out = []
+    for day in sorted(days, key=daykey):
+        d = days[day]
+        for n, (_stem, body) in enumerate(d["entries"]):
+            out.append(f"<span id=\"d{day}-e{n}\"></span>" + raw(body))
+        for n, (_stem, body) in enumerate(d["essays"]):
+            out.append(f"<span id=\"d{day}-s{n}\"></span>" + raw(body))
+    return "\n".join(out)
+
+
+def main():
+    import shutil
+    days, tensions = collect()
+    updir = OUT.parent / "uploads"
+    updir.mkdir(exist_ok=True)
+    for f in (ROOT / "uploads").glob("*"):
+        if f.is_file() and f.name != "manifest.json":
+            shutil.copy(f, updir / f.name)
+    nav = sidebar(days, lambda fn: f"uploads/{fn}")
+    body = content(days) + "\n".join(raw(t[1]) for t in tensions)
 
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(f"""<!doctype html>
+    OUT.write_text(PAGE.format(nav=nav, body=body))
+    print(f"wrote {OUT.relative_to(ROOT)}")
+
+
+PAGE = """<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>nibbanahelp</title>
 <style>
-  body {{ background: #fff; color: #000;
-         font-family: monospace;
+  body {{ background: #fff; color: #000; font-family: monospace;
          margin: 0; padding: 0 1rem; }}
   a {{ color: #000; }}
   pre {{ white-space: pre-wrap; font-family: monospace; }}
+  #wrap {{ display: flex; }}
+  #nav {{ width: 12rem; flex-shrink: 0; padding-top: 1rem; }}
+  #nav button {{ display: block; width: 2.2rem; height: 2.2rem;
+    background: #fff; color: #000; border: 1px solid #000;
+    font-family: monospace; font-size: 1rem; cursor: pointer;
+    margin-bottom: .3rem; }}
+  #nav div {{ font-size: .8rem; margin-bottom: .6rem; }}
+  #main {{ flex: 1; min-width: 0; }}
 </style>
 </head>
 <body>
-{''.join(parts)}
+<div id=wrap>{nav}<div id=main>{body}</div></div>
+<script>
+function t(id) {{
+  var e = document.getElementById(id);
+  e.style.display = e.style.display === 'none' ? 'block' : 'none';
+}}
+</script>
 </body>
 </html>
-""")
-    print(f"wrote {OUT.relative_to(ROOT)}")
+"""
 
 
 if __name__ == "__main__":
