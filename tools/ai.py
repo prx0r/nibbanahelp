@@ -26,6 +26,7 @@ BASE = f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/ai/run"
 
 EMBED_MODEL = "@cf/baai/bge-m3"
 CHAT_MODEL = "@cf/deepseek-ai/deepseek-v4-flash"
+FALLBACK_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 
 
 def _post(model: str, payload: dict, timeout: int = 120) -> dict:
@@ -45,10 +46,21 @@ def embed_batch(texts: list, model: str = None) -> list:
     return out["result"]["data"]
 
 
+def _chat_once(model, messages, max_tokens):
+    out = _post(model, {"messages": messages, "max_tokens": max_tokens})
+    ch = out["result"]["choices"][0]["message"]
+    text = ch.get("content") or ""
+    return text.strip()
+
+
 def chat(messages: list, max_tokens: int = 800) -> str:
-    out = _post(CHAT_MODEL,
-                {"messages": messages, "max_tokens": max_tokens})
-    return out["result"]["choices"][0]["message"]["content"]
+    try:
+        text = _chat_once(CHAT_MODEL, messages, max_tokens)
+        if text:
+            return text
+    except Exception:
+        pass
+    return _chat_once(FALLBACK_MODEL, messages, max_tokens)
 
 
 def rerank(query: str, texts: list) -> list:

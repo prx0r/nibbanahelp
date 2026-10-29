@@ -220,12 +220,25 @@ export default {
           relay.map((m) => `- [${m.kind}] ${m.label} :: ${m.url}\n  ${m.text.slice(0, 600)}`).join("\n")
         : "";
       const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT + relayBlock }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
-      let reply;
+      const readReply = (out) => {
+        if (!out) return "";
+        if (typeof out.response === "string" && out.response.trim()) return out.response;
+        const ch = out.result?.choices?.[0]?.message || (out.choices && out.choices[0] && out.choices[0].message);
+        const t = ch && ch.content;
+        return typeof t === "string" ? t.trim() : "";
+      };
+      let reply = "";
       try {
         const out = await env.AI.run("@cf/deepseek-ai/deepseek-v4-flash", { messages, max_tokens: 800 });
-        reply = out.response || out.result?.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) || "";
-        if (typeof reply !== "string" || !reply.trim()) throw new Error("empty");
-      } catch (e) {
+        reply = readReply(out);
+      } catch (e) { reply = ""; }
+      if (!reply) {
+        try {
+          const out = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { messages, max_tokens: 400 });
+          reply = readReply(out);
+        } catch (e) { reply = ""; }
+      }
+      if (!reply) {
         return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
       }
       await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: query, assistant: reply, relayed: relay.map((m) => m.id) }));
