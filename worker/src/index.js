@@ -21,7 +21,7 @@ function page(title, inner) {
       `margin-bottom:.3rem}` +
       `#nav div{margin-bottom:.6rem}` +
       `#main{flex:1;min-width:0}` +
-      `.motto{font-style:italic}` +
+      `.motto{font-style:italic;text-align:center}` +
       `.motto-blk,pre.blk{cursor:text}` +
       `textarea{width:100%;box-sizing:border-box;font-family:monospace;` +
       `font-size:1rem;border:1px solid #000;padding:.5rem}` +
