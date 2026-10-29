@@ -215,6 +215,9 @@ def header(p: Path) -> dict:
         m = re.search(rf"^{k}:\s*(.+)$", head, re.M)
         if m:
             out[k] = m.group(1).strip()
+    m = re.search(r"^roots:\s*\[(.+?)\]\s*$", head, re.M)
+    if m:
+        out["roots"] = [x.strip() for x in m.group(1).split(",")]
     body = text.split("---", 1)[1] if "---" in text else text
     return out, body.strip()
 
@@ -266,12 +269,17 @@ def collect():
     for p in sorted((ROOT / "tensions").glob("*.md")):
         h, body = header(p)
         if h.get("status") in ("open", "loosening"):
-            tensions.append((h.get("id", p.stem), body))
+            tensions.append({"id": h.get("id", p.stem),
+                             "summary": h.get("summary", ""),
+                             "status": h.get("status"),
+                             "roots": h.get("roots", []),
+                             "body": body})
     return days, tensions
 
 
 def sidebar(days, link_uploads):
-    s = ["<div id=nav>"]
+    s = ["<div id=nav>",
+         "<a href=\"/chat\">chat</a><br><a href=\"/vis\">vis</a><br><br>"]
     order = sorted(days, key=daykey)
     for i, day in enumerate(order):
         d = days[day]
@@ -304,9 +312,120 @@ def content(days):
 
 def tension_blocks(tensions):
     out = []
-    for i, (tid, body) in enumerate(tensions):
-        out.append(block(f"t{i}", f"tensions/{tid}.md", body, viewer=False))
+    for i, t in enumerate(tensions):
+        out.append(block(f"t{i}", f"tensions/{t['id']}.md", t["body"],
+                         viewer=False))
     return "\n".join(out)
+
+
+ROOTS = [("lobha", "greed"), ("dosa", "hate"), ("moha", "delusion")]
+
+
+def build_vis(days, tensions):
+    w = {r: 0.0 for r, _ in ROOTS}
+    for t in tensions:
+        wt = 1.0 if t["status"] == "open" else 0.6
+        for r in t["roots"]:
+            if r in w:
+                w[r] += wt
+    xs = {"lobha": 150, "dosa": 400, "moha": 650}
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420"'
+             ' style="max-width:100%;height:auto" font-family="monospace">']
+    parts.append("<text x=\"400\" y=\"24\" text-anchor=\"middle\" "
+                 "font-size=\"14\">afflictions, live</text>")
+    n_live = sum(1 for t in tensions if t["status"] == "open")
+    parts.append(f"<text x=\"400\" y=\"42\" text-anchor=\"middle\" "
+                 f"font-size=\"11\">{n_live} open threads, "
+                 f"{len(tensions) - n_live} loosening</text>")
+    for r, en in ROOTS:
+        rad = 30 + 18 * w[r]
+        parts.append(f"<circle cx=\"{xs[r]}\" cy=\"130\" r=\"{rad:.0f}\" "
+                     f"fill=\"none\" stroke=\"black\" stroke-width=\"2\"/>")
+        parts.append(f"<text x=\"{xs[r]}\" y=\"126\" text-anchor=\"middle\" "
+                     f"font-size=\"13\">{r}</text>")
+        parts.append(f"<text x=\"{xs[r]}\" y=\"142\" text-anchor=\"middle\" "
+                     f"font-size=\"10\">{en} · {w[r]:.1f}</text>")
+    groups = {}
+    for t in tensions:
+        primary = next((r for r in t["roots"] if r in xs), None) or "moha"
+        groups.setdefault(primary, []).append(t)
+    for r, ts in groups.items():
+        for i, t in enumerate(ts):
+            x = xs[r] + (i - (len(ts) - 1) / 2) * 120
+            y = 300
+            for pr in t["roots"]:
+                if pr not in xs:
+                    continue
+                dash = "" if pr == r else ' stroke-dasharray="4,3"'
+                parts.append(f"<line x1=\"{xs[pr]}\" "
+                             f"y1=\"{130 + 30 + 18 * w[pr]:.0f}\" "
+                             f"x2=\"{x}\" y2=\"{y - 8}\"{dash} "
+                             f"stroke=\"black\" stroke-width=\"1\"/>")
+            parts.append(f"<circle cx=\"{x}\" cy=\"{y}\" r=\"9\" "
+                         f"fill=\"black\"/>")
+            parts.append(f"<text x=\"{x}\" y=\"{y + 26}\" text-anchor=\"middle\" "
+                         f"font-size=\"10\">{html.escape(t['id'])}</text>")
+            parts.append(f"<text x=\"{x}\" y=\"{y + 38}\" text-anchor=\"middle\" "
+                         f"font-size=\"9\">{html.escape(t['status'])}</text>")
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
+CHAT_PAGE = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nibbanahelp chat</title>
+<style>
+  body { background: #fff; color: #000; font-family: monospace;
+         margin: 0; padding: 0 1rem; max-width: 44rem; }
+  a { color: #000; }
+  #log p { white-space: pre-wrap; }
+  .you { color: #555; }
+  form { display: flex; gap: .5rem; margin: 1rem 0; }
+  input { flex: 1; font-family: monospace; font-size: 1rem;
+    border: 1px solid #000; padding: .5rem; }
+  button { background: #000; color: #fff; border: 0; padding: .5rem 1rem;
+    font-size: 1rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<p><a href="/">diary</a> · <a href="/vis">vis</a></p>
+<div id=log></div>
+<form id=f><input id=q autocomplete=off placeholder="what is on your mind?"><button>send</button></form>
+<script>
+var transcript = [];
+var log = document.getElementById('log');
+var sid = Math.random().toString(36).slice(2, 10);
+function say(who, text) {
+  var p = document.createElement('p');
+  if (who === 'you') p.className = 'you';
+  p.textContent = (who === 'you' ? '> ' : '') + text;
+  log.appendChild(p);
+  window.scrollTo(0, document.body.scrollHeight);
+}
+document.getElementById('f').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var box = document.getElementById('q');
+  var text = box.value.trim();
+  if (!text) return;
+  box.value = '';
+  say('you', text);
+  transcript.push({ role: 'user', content: text });
+  fetch('chat', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sid: sid, messages: transcript.slice(-12) }) }).then(function (r) {
+    if (!r.ok) throw 0;
+    return r.json();
+  }).then(function (d) {
+    say('ai', d.reply);
+    transcript.push({ role: 'assistant', content: d.reply });
+  }).catch(function () { say('ai', '[offline mirror — connect to talk]'); });
+});
+</script>
+</body>
+</html>"""
 
 
 def main():
@@ -325,6 +444,19 @@ def main():
     OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS,
                                gap=GAP))
     print(f"wrote {OUT.relative_to(ROOT)}")
+    (OUT.parent / "chat.html").write_text(CHAT_PAGE)
+    print("wrote site/chat.html")
+    vis_body = build_vis(days, tensions)
+    (OUT.parent / "vis.html").write_text(
+        "<!doctype html><html><head><meta charset=utf-8>"
+        "<meta name=viewport content='width=device-width,initial-scale=1'>"
+        "<title>nibbanahelp vis</title><style>"
+        "body{background:#fff;color:#000;font-family:monospace;"
+        "margin:0;padding:0 1rem;max-width:60rem}"
+        "a{color:#000}</style></head><body>"
+        "<p><a href='/'>diary</a> · <a href='/chat'>chat</a></p>"
+        + vis_body + "</body></html>")
+    print("wrote site/vis.html")
 
 
 PAGE = """<!doctype html>

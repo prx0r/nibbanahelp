@@ -4,6 +4,7 @@ diarist: prx0r
 opened: 2026-10-28
 status: open
 domain: identity
+roots: [dosa, moha]
 summary: bisexual but not openly, unconscious energy spent armouring against shame
 ---
 

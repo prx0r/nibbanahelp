@@ -33,10 +33,11 @@ _site_spec = _ilu.spec_from_file_location(
     "nibsite", Path(__file__).resolve().parent / "site.py")
 _nibsite = _ilu.module_from_spec(_site_spec)
 _site_spec.loader.exec_module(_nibsite)
-header, raw, collect, sidebar, content, tension_blocks, JS, motto_block, GAP = (
+header, raw, collect, sidebar, content, tension_blocks, JS, motto_block, GAP, build_vis, CHAT_PAGE = (
     _nibsite.header, _nibsite.raw, _nibsite.collect, _nibsite.sidebar,
     _nibsite.content, _nibsite.tension_blocks, _nibsite.JS,
-    _nibsite.motto_block, _nibsite.GAP)
+    _nibsite.motto_block, _nibsite.GAP, _nibsite.build_vis,
+    _nibsite.CHAT_PAGE)
 
 ROOT = Path(__file__).resolve().parent.parent
 UPLOADS = ROOT / "uploads"
@@ -146,8 +147,7 @@ class H(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def safe_file(self, f: str):
-        if ".." in f or f.startswith("/") or not f.endswith(".md"):
-            return None
+        if ".." in f or f.startswith("/") or not f.endswith(".md"):            return None
         if not (f.startswith("entries/") or f.startswith("essays/") or
                 f.startswith("tensions/") or f == "motto.txt"):
             return None
@@ -157,6 +157,19 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/":
             self._send(page())
+        elif self.path == "/vis":
+            days, tensions = collect()
+            self._send("<!doctype html><html><head><meta charset=utf-8>"
+                       "<meta name=viewport content='width=device-width,"
+                       "initial-scale=1'>"
+                       "<title>nibbanahelp vis</title><style>"
+                       "body{background:#fff;color:#000;font-family:monospace;"
+                       "margin:0;padding:0 1rem;max-width:60rem}"
+                       "a{color:#000}</style></head><body>"
+                       "<p><a href='/'>diary</a> · <a href='/chat'>chat</a></p>"
+                       + build_vis(days, tensions) + "</body></html>")
+        elif self.path == "/chat":
+            self._send(CHAT_PAGE, 200, "text/html")
         elif self.path.startswith("/files/"):
             name = unquote(self.path[len("/files/"):])
             if "/" in name or name.startswith("."):
@@ -177,6 +190,38 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         ctype = self.headers.get("Content-Type", "")
         raw = self.rfile.read(n) if n else b""
+        if self.path == "/chat" and n and "json" in ctype:
+            import json as _json
+            try:
+                data = _json.loads(raw.decode())
+            except ValueError:
+                return self._send("bad json", 400)
+            msgs = data.get("messages", [])[-12:]
+            if not msgs or not isinstance(msgs, list):
+                return self._send("no messages", 400)
+            try:
+                from ai import chat as _aichat, CHAT_SYSTEM
+                reply = _aichat([{"role": "system", "content": CHAT_SYSTEM}] +
+                                [m for m in msgs
+                                 if m.get("role") in ("user", "assistant")],
+                                max_tokens=400)
+            except Exception as e:
+                return self._send("ai error", 502)
+            import datetime as _dt, random as _r
+            (ROOT / "sessions").mkdir(exist_ok=True)
+            fn = (f"chat-{_dt.date.today().isoformat()}-"
+                  f"{_r.randrange(1 << 30):08x}.json")
+            (ROOT / "sessions" / fn).write_text(_json.dumps(
+                {"date": str(_dt.date.today()), "via": "serve",
+                 "messages": msgs + [{"role": "assistant",
+                                       "content": reply}]},
+                ensure_ascii=False, indent=1))
+            git("add", f"sessions/{fn}")
+            git("commit", "-q", "-m", f"chat: {fn}")
+            git("push", "-q", "origin", "main")
+            self._send(_json.dumps({"reply": reply}), 200,
+                       "application/json")
+            return
         if self.path == "/save" and n and "urlencoded" in ctype:
             from urllib.parse import parse_qs as _pq
             f = _pq(raw.decode())

@@ -8,6 +8,7 @@ diarist: ...                  # handle
 opened: 2026-10-28            # first logged
 status: open | loosening | resolved
 domain: money | addiction | identity | relationship | health | doubt | other
+roots: [lobha, moha]          # which of the three roots feed it
 summary: one-line plain statement
 ```
 

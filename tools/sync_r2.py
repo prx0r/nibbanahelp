@@ -8,6 +8,7 @@ applies them to repo files (headers preserved), deletes the R2 keys,
 commits + pushes, rebuilds the static page + worker bundle, redeploys.
 Stdlib + boto3 (creds from /root/.r2-env).
 """
+import json
 import os
 import re
 import subprocess
@@ -48,6 +49,24 @@ def main():
         return
     applied = []
     for key in keys:
+        if key.startswith("pending/chat/"):
+            name = key[len("pending/chat/"):]
+            if not re.match(r"^[\w][\w.\-/]*\.json$", name) or ".." in name:
+                print("skip (bad chat key):", key)
+                continue
+            body = s3.get_object(Bucket=B, Key=key)["Body"].read()
+            try:
+                json.loads(body)
+            except ValueError:
+                print("skip (bad chat json):", key)
+                continue
+            dest = ROOT / "sessions" / ("chat-" + name.replace("/", "-"))
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(body)
+            s3.delete_object(Bucket=B, Key=key)
+            applied.append(str(dest.relative_to(ROOT)))
+            print("applied:", dest.relative_to(ROOT))
+            continue
         f = key[len("pending/"):]
         if not ALLOWED.match(f):
             print("skip (not allowed):", f)

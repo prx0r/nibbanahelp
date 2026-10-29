@@ -1,8 +1,24 @@
 import PAGE from "./page.js";
 import FILES from "./files.js";
 import { GAP } from "./theme.js";
+import CONTEXT from "./context.js";
+import CHAT_PAGE from "./chat_html.js";
+import VIS_PAGE from "./vis_html.js";
 
 const ALLOWED = /^(entries|essays|tensions)\/[^/]+\.md$|^motto\.txt$/;
+
+const SYSTEM =
+  "You are a dharma friend inside nibbanahelp, a shared diary of people " +
+  "attaining nibbana. STRICT RULES: never give advice, recommendations, " +
+  "or instructions. Only two moves: (1) ask questions — especially " +
+  "questions that help the diarist notice and name tensions (cravings, " +
+  "irritations, fog) in ordinary daily situations; (2) relay relevant " +
+  "passages from the provided context, always with their source. When " +
+  "you see a tension forming, name it plainly and map it to its root: " +
+  "lobha (greed, pulling), dosa (hate, pushing), moha (delusion, fog). " +
+  "If they ask what to do, reflect the question back with a sharper " +
+  "question plus the most relevant relayed passage. Short replies. " +
+  "One question at a time.";
 
 function page(title, inner) {
   return new Response(
@@ -57,6 +73,44 @@ export default {
 
     if (url.pathname === "/") {
       return page("nibbanahelp", livePage());
+    }
+
+    if (url.pathname === "/vis") {
+      return new Response(VIS_PAGE, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    if (url.pathname === "/chat" && req.method === "GET") {
+      return new Response(CHAT_PAGE, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    if (url.pathname === "/chat" && req.method === "POST") {
+      let data;
+      try {
+        data = await req.json();
+      } catch (e) {
+        return new Response("bad json", { status: 400 });
+      }
+      const sid = typeof data.sid === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(data.sid) ? data.sid : "x";
+      const hist = Array.isArray(data.messages) ? data.messages.slice(-12) : [];
+      const clean = hist.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string").slice(-12);
+      if (!clean.length || clean[clean.length - 1].role !== "user") {
+        return new Response("no question", { status: 400 });
+      }
+      const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
+      let reply;
+      try {
+        const out = await env.AI.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", { messages, max_tokens: 400 });
+        reply = out.response || out.result?.response || (out.choices && out.choices[0] && out.choices[0].message && out.choices[0].message.content) || "";
+        if (typeof reply !== "string" || !reply.trim()) throw new Error("empty");
+      } catch (e) {
+        return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
+      }
+      await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: clean[clean.length - 1].content, assistant: reply }));
+      return new Response(JSON.stringify({ reply }), { headers: { "content-type": "application/json" } });
     }
 
     if (url.pathname === "/save" && req.method === "POST") {

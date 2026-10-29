@@ -40,6 +40,35 @@ for (const f of readdirSync(join(root, "tensions"))) {
     i >= 0 ? text.slice(i + 3).replace(/^\n+/, "") : text;
 }
 files["motto.txt"] = readFileSync(join(root, "motto.txt"), "utf8").trim();
+
+// grounding context for chat: live tensions + root profiles, truncated
+let context = "LIVE TENSIONS:\n";
+for (const f of readdirSync(join(root, "tensions"))) {
+  if (!f.endsWith(".md")) continue;
+  const text = readFileSync(join(root, "tensions", f), "utf8");
+  const head = text.split("---")[0];
+  const get = (k) => (head.match(new RegExp(`^${k}:\\s*(.+)$`, "m")) || [])[1] || "";
+  const body = (text.split("---")[1] || "").trim().slice(0, 400);
+  context += `- ${get("id")} [${get("status")}] roots=${get("roots")} :: ${get("summary")}\n  ${body}\n`;
+}
+context += "\nROOTS:\n";
+for (const f of ["greed-lobha.md", "hatred-dosa.md", "delusion-moha.md"]) {
+  try {
+    context += `--- ${f} ---\n` + readFileSync(join(root, "roots", f), "utf8").slice(0, 900) + "\n";
+  } catch (e) { /* skip */ }
+}
+writeFileSync(
+  join(dir, "src", "context.js"),
+  "export default " + JSON.stringify(context.slice(0, 6000)) + ";\n"
+);
+
+// static pages (built by tools/site.py)
+for (const p of ["chat.html", "vis.html"]) {
+  writeFileSync(
+    join(dir, "src", p.replace(".", "_") + ".js"),
+    "export default " + JSON.stringify(readFileSync(join(root, "site", p), "utf8")) + ";\n"
+  );
+}
 for (const day of Object.keys(dayGroups)) {
   dayGroups[day].entries.forEach((f, n) => (anchors[`d${day}-e${n}`] = f));
   dayGroups[day].essays.forEach((f, n) => (anchors[`d${day}-s${n}`] = f));
