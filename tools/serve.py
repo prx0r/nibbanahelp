@@ -55,6 +55,7 @@ CSS = ("body{background:#fff;color:#000;"
        "margin-bottom:.3rem}"
        "#nav div{font-size:.8rem;margin-bottom:.6rem}"
        "#main{flex:1;min-width:0}"
+       ".motto{color:#888;font-style:italic}"
        "input[type=text]{width:100%;font-family:monospace;font-size:1rem;"
        "border:1px solid #000;padding:.5rem;background:#fff;color:#000}"
        "textarea{width:100%;box-sizing:border-box;font-family:monospace;"
@@ -96,6 +97,9 @@ def entry_files():
 
 def page():
     days, tensions = collect()
+    mp = ROOT / "motto.txt"
+    motto = f"<p class=motto>{html.escape(mp.read_text().strip())}</p>" \
+        if mp.is_file() else ""
     forms = ["<form method=post action=/upload enctype=multipart/form-data>"
              "<input type=file name=file><br>"
              "<label><input type=checkbox name=backfill value=1> "
@@ -117,7 +121,7 @@ def page():
             bits.append(f"<p><a href=\"/edit?f={quote(rp)}\">edit</a></p>")
             bits.append(raw(h_body))
     body = "\n".join(bits) + "\n".join(raw(t[1]) for t in tensions)
-    main = "\n".join(forms) + body
+    main = motto + "\n".join(forms) + body
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
             f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"
@@ -151,7 +155,7 @@ class H(BaseHTTPRequestHandler):
         if ".." in f or f.startswith("/") or not f.endswith(".md"):
             return None
         if not (f.startswith("entries/") or f.startswith("essays/") or
-                f.startswith("tensions/")):
+                f.startswith("tensions/") or f == "motto.txt"):
             return None
         p = ROOT / f
         return p if p.is_file() else None

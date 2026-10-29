@@ -145,9 +145,13 @@ def main():
             shutil.copy(f, updir / f.name)
     nav = sidebar(days, lambda fn: f"uploads/{fn}")
     body = content(days) + "\n".join(raw(t[1]) for t in tensions)
+    motto = ""
+    mp = ROOT / "motto.txt"
+    if mp.is_file():
+        motto = mp.read_text().strip()
 
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(PAGE.format(nav=nav, body=body))
+    OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto))
     print(f"wrote {OUT.relative_to(ROOT)}")
 
 
@@ -170,9 +174,11 @@ PAGE = """<!doctype html>
     margin-bottom: .3rem; }}
   #nav div {{ font-size: .8rem; margin-bottom: .6rem; }}
   #main {{ flex: 1; min-width: 0; }}
+  .motto {{ color: #888; font-style: italic; }}
 </style>
 </head>
 <body>
+<p class=motto>{motto}</p>
 <div id=wrap>{nav}<div id=main>{body}</div></div>
 <script>
 function t(id) {{

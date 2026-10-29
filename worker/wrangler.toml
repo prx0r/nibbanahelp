@@ -1,3 +1,7 @@
 name = "nibbanahelp"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
+
+[[r2_buckets]]
+binding = "BRAIN"
+bucket_name = "nibbanahelp-live"
