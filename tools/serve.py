@@ -273,12 +273,15 @@ class H(BaseHTTPRequestHandler):
                     print("graph stage unavailable:", str(e)[:200])
                 _rrpairs = []
                 try:
-                    _out = _post_ai("@cf/baai/bge-reranker-base",
-                                    {"query": clean[-1]["content"],
-                                     "contexts": [{"text": c["text"][:1000]} for c in _cands]})
-                    _rrpairs = [(float(_r.get("score", 0)), int(_r.get("id", -1)))
-                                for _r in _out.get("result", {}).get("response", [])
-                                if 0 <= int(_r.get("id", -1)) < len(_cands)]
+                    for _b in range(0, len(_cands), 8):
+                        _batch = _cands[_b:_b + 8]
+                        _out = _post_ai("@cf/baai/bge-reranker-base",
+                                        {"query": clean[-1]["content"],
+                                         "contexts": [{"text": c["text"][:400]} for c in _batch]})
+                        for _r in _out.get("result", {}).get("response", []):
+                            _i = int(_r.get("id", -1))
+                            if 0 <= _i < len(_batch):
+                                _rrpairs.append((float(_r.get("score", 0)), _b + _i))
                     _rrpairs.sort(reverse=True)
                 except Exception:
                     _rrpairs = [(1.0, i) for i in range(len(_cands))]

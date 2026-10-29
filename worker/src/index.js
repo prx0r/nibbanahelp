@@ -186,15 +186,20 @@ async function matchPassages(env, query, k = 5) {
     }
   } catch (e) { /* graph stage optional */ }
   cands = cands.slice(0, 30);
-  let ranked = cands.map((item) => [0, item]);
+  let ranked = cands.map((item) => [0, 1, item]);
   try {
-    const rr = await env.AI.run("@cf/baai/bge-reranker-base", {
-      query,
-      contexts: cands.map((item) => ({ text: (item.text || "").slice(0, 1000) })),
-    });
-    const pairs = (rr.response || rr.result?.response || [])
-      .filter((r) => Number.isInteger(r.id) && r.id >= 0 && r.id < cands.length)
-      .map((r) => [r.score, cands[r.id]]);
+    let pairs = [];
+    for (let b = 0; b < cands.length; b += 8) {
+      const batch = cands.slice(b, b + 8);
+      const rr = await env.AI.run("@cf/baai/bge-reranker-base", {
+        query,
+        contexts: batch.map((item) => ({ text: (item.text || "").slice(0, 400) })),
+      });
+      for (const r of (rr.response || rr.result?.response || [])) {
+        if (Number.isInteger(r.id) && r.id >= 0 && r.id < batch.length)
+          pairs.push([r.score, batch[r.id]]);
+      }
+    }
     if (pairs.length) {
       pairs = pairs.map(([score, item]) =>
         [score * (BOOST[item.kind] || 1),
