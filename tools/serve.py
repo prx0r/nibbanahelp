@@ -206,7 +206,7 @@ class H(BaseHTTPRequestHandler):
             relay, sources = [], []
             try:
                 from ai import (chat as _aichat, embed_batch as _emb,
-                                rerank as _rr, CHAT_SYSTEM)
+                                _post as _post_ai, CHAT_SYSTEM)
                 import numpy as _np
                 global _RELAY
                 try:
@@ -220,16 +220,27 @@ class H(BaseHTTPRequestHandler):
                     _mat = _mat / (_np.linalg.norm(_mat, axis=1, keepdims=True) + 1e-9)
                     _RELAY = (_items, _mat)
                 _items, _mat = _RELAY
-                _q = _np.array(_emb([clean[-1]["content"][:2000]])[0], dtype=_np.float32)
+                _msg = clean[-1]["content"][:2000]
+                _stop = {"the", "and", "for", "that", "this", "with", "have",
+                         "you", "are", "not", "but", "can", "its", "was",
+                         "just", "like", "what", "when", "your", "about"}
+                _kw = [w for w in re.findall(r"[a-z']{4,}", _msg.lower())
+                       if w not in _stop]
+                _views = [_msg] + ([" ".join(_kw[:6])] if _kw else [])
+                _embs = _emb(_views)
+                _q = _np.zeros(len(_embs[0]), dtype=_np.float32)
+                for _e in _embs:
+                    _e = _np.array(_e, dtype=_np.float32)
+                    _q += _e / (_np.linalg.norm(_e) + 1e-9)
                 _q = _q / (_np.linalg.norm(_q) + 1e-9)
                 _raw = (_mat @ _q).astype(float)
                 _rawmap = { _items[int(_i)]["id"]: float(_raw[int(_i)]) for _i in range(len(_items)) }
                 # own words first: diary, then past chats/notes, then others
-                _BOOST = {"own-tension": 1.35}
+                _BOOST = {"own-tension": 1.35, "canon": 1.2}
                 _sc = _raw.copy()
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
-                _order = _np.argsort(-_sc)[:20]
+                _order = _np.argsort(-_sc)[:30]
                 _cands = [_items[int(i)] for i in _order]
                 # graph stage: roots of any matched tensions -> dharma-tech concept retrieval
                 try:
@@ -256,7 +267,17 @@ class H(BaseHTTPRequestHandler):
                             _rawmap[_g["id"]] = 0.5
                 except Exception as e:
                     print("graph stage unavailable:", str(e)[:200])
-                _rrorder = _rr(clean[-1]["content"], [c["text"][:1000] for c in _cands])
+                _rrpairs = []
+                try:
+                    _out = _post_ai("@cf/baai/bge-reranker-base",
+                                    {"query": clean[-1]["content"],
+                                     "contexts": [{"text": c["text"][:1000]} for c in _cands]})
+                    _rrpairs = [(float(_r.get("score", 0)), int(_r.get("id", -1)))
+                                for _r in _out.get("result", {}).get("response", [])
+                                if 0 <= int(_r.get("id", -1)) < len(_cands)]
+                    _rrpairs.sort(reverse=True)
+                except Exception:
+                    _rrpairs = [(1.0, i) for i in range(len(_cands))]
                 # dynamic composition, only if truly relevant (raw cosine floor):
                 # anchor own tension -> lived others -> one lineage -> one own-past
                 def _tier(c):
@@ -270,16 +291,18 @@ class H(BaseHTTPRequestHandler):
                     if k in ("canon", "roots-doc"):
                         return "lineage"
                     return "ownpast"
-                _ranked = [_cands[i] for i in _rrorder if 0 <= i < len(_cands)]
+                _ranked = [(_s, _cands[i]) for _s, i in _rrpairs]
                 _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1,
                              "dialogue": 2}
                 _seen, relay, sources = set(), [], []
-                for _c in _ranked:
+                for _rrs, _c in _ranked:
                     _t = _tier(_c)
                     if _slots.get(_t, 0) <= 0:
                         continue
                     _floor = 0.22 if _t == "anchor" else 0.28
                     if _rawmap.get(_c["id"], 0) < _floor:
+                        continue
+                    if _rrs < 0.12 and _t != "anchor":
                         continue
                     _key = _c["id"].split(":")[-1].replace("tension-", "")
                     if _key in _seen:
@@ -289,6 +312,10 @@ class H(BaseHTTPRequestHandler):
                     relay.append(_c)
                     if len(relay) >= 6:
                         break
+                _TIER_ORDER = {"canon": 0, "roots-doc": 1, "graph": 1,
+                               "anchor": 2, "ownpast": 3,
+                               "lived": 4, "dialogue": 5}
+                relay.sort(key=lambda c: _TIER_ORDER.get(_tier(c), 9))
                 sources = [{"label": r["label"], "url": r["url"],
                             "excerpt": r["text"][:280]} for r in relay]
             except Exception as e:

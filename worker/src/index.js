@@ -38,9 +38,10 @@ const SYSTEM =
   "your own words minimal and interrogative. You are " +
   "a finder, not a teacher. Copy source labels character-for-character " +
   "from the relay block; never invent or reword a source. Never quote " +
-  "anything — canon included — that is not in the relay block or the " +
-  "provided context; if the block has no relevant passage, say so " +
-  "plainly and ask your one question.";
+  "Quote ONLY from " +
+  "the relay block's listed passages (canon included); the background " +
+  "context is vocabulary, never an answer. If no relayed passage is " +
+  "relevant, say so plainly and ask your one question.";
 
 function page(title, inner) {
   return new Response(
@@ -131,9 +132,23 @@ function stemKey(id) {
 async function matchPassages(env, query, k = 5) {
   const { vecs, items, dharma, dharmaById, dharmaByConcept } = await loadRelay(env);
   if (!items.length) return [];
-  const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
-  const q = emb.data ? emb.data[0] : emb.result.data[0];
-  const BOOST = { "own-tension": 1.35 };
+  const stopW = new Set(["the","and","for","that","this","with","have","you",
+    "are","not","but","can","its","was","just","like","what","when","your",
+    "about"]);
+  const kw = (query.toLowerCase().match(/[a-z']{4,}/g) || [])
+    .filter((w) => !stopW.has(w));
+  const views = [query.slice(0, 2000)];
+  if (kw.length) views.push(kw.slice(0, 6).join(" "));
+  const emb = await env.AI.run("@cf/baai/bge-m3", { text: views });
+  const arrs = emb.data || emb.result.data;
+  const q = new Array(arrs[0].length).fill(0);
+  for (const a of arrs) {
+    let n = Math.sqrt(a.reduce((s2, x) => s2 + x * x, 0)) || 1e-9;
+    for (let i = 0; i < a.length; i++) q[i] += a[i] / n;
+  }
+  let qn = Math.sqrt(q.reduce((s2, x) => s2 + x * x, 0)) || 1e-9;
+  for (let i = 0; i < q.length; i++) q[i] /= qn;
+  const BOOST = { "own-tension": 1.35, "canon": 1.2 };
   const raw = {};
   const scored = [];
   for (const item of items) {
@@ -144,7 +159,7 @@ async function matchPassages(env, query, k = 5) {
     scored.push([s * (BOOST[item.kind] || 1), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
-  let cands = scored.slice(0, 20).map(([, item]) => item);
+  let cands = scored.slice(0, 30).map(([, item]) => item);
   // graph stage: roots of matched tensions -> concept-constrained passages
   try {
     const roots = new Set();
@@ -168,19 +183,20 @@ async function matchPassages(env, query, k = 5) {
       }
     }
   } catch (e) { /* graph stage optional */ }
-  cands = cands.slice(0, 26);
-  let ranked = cands;
+  cands = cands.slice(0, 30);
+  let ranked = cands.map((item) => [0, item]);
   try {
     const rr = await env.AI.run("@cf/baai/bge-reranker-base", {
       query,
-      contexts: ranked.map((item) => ({ text: (item.text || "").slice(0, 1000) })),
+      contexts: cands.map((item) => ({ text: (item.text || "").slice(0, 1000) })),
     });
-    const order = (rr.response || rr.result?.response || [])
-      .slice()
-      .sort((a, b) => b.score - a.score)
-      .map((r) => r.id)
-      .filter((i) => Number.isInteger(i) && i >= 0 && i < ranked.length);
-    if (order.length) ranked = order.map((i) => ranked[i]);
+    const pairs = (rr.response || rr.result?.response || [])
+      .filter((r) => Number.isInteger(r.id) && r.id >= 0 && r.id < cands.length)
+      .map((r) => [r.score, cands[r.id]]);
+    if (pairs.length) {
+      pairs.sort((a, b) => b[0] - a[0]);
+      ranked = pairs;
+    }
   } catch (e) { /* fall back to cosine order */ }
   // dynamic composition: anchor own tension -> lived others -> lineage -> own past.
   // each tier gated on true relevance (raw cosine floor); empty tiers skipped.
@@ -195,11 +211,12 @@ async function matchPassages(env, query, k = 5) {
   const slots = { anchor: 1, lived: 3, dialogue: 2, lineage: 1, ownpast: 1 };
   const seen = new Set();
   const out = [];
-  for (const c of ranked) {
+  for (const [rrs, c] of ranked) {
     const t = tierOf(c);
     if (!(slots[t] > 0)) continue;
     const floor = t === "anchor" ? 0.22 : 0.28;
     if ((raw[c.id] || 0) < floor && !(c.kind === "graph")) continue;
+    if (rrs < 0.12 && t !== "anchor" && !(c.kind === "graph")) continue;
     const key = stemKey(c.id);
     if (seen.has(key)) continue;
     seen.add(key);
@@ -207,6 +224,9 @@ async function matchPassages(env, query, k = 5) {
     out.push(c);
     if (out.length >= 6) break;
   }
+  const TIER = { "canon": 0, "roots-doc": 1, "graph": 1, "anchor": 2,
+                 "ownpast": 3, "lived": 4, "dialogue": 5 };
+  out.sort((a, b) => (TIER[tierOf(a)] ?? 9) - (TIER[tierOf(b)] ?? 9));
   return out.slice(0, k);
 }
 

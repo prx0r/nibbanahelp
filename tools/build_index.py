@@ -109,6 +109,37 @@ def collect():
                       "url": f"sessions/{p.name}",
                       "themes": [],
                       "text": "\n".join(turns)[:2000]})
+    # 4b. curated link-first answers (forum threads, timing guidance)
+    for cp in sorted((CORPUS / "curated").glob("*.json")):
+        try:
+            recs = json.loads(cp.read_text())
+        except (ValueError, OSError):
+            continue
+        if isinstance(recs, dict):
+            recs = [recs]
+        for r in recs:
+            if not isinstance(r, dict) or not r.get("text"):
+                continue
+            items.append({"id": str(r.get("id", f"curated:{cp.stem}")),
+                          "kind": r.get("kind", "teacher-answer"),
+                          "label": str(r.get("label", cp.stem))[:90],
+                          "url": str(r.get("url", "")),
+                          "themes": r.get("themes", []),
+                          "text": str(r["text"])[:2000]})
+    # 4c. Beth Upton interview transcripts (local, from the abhidhamma repo)
+    UPTON = Path("/home/box/repos/abhidhamma/transcripts/pa-auk")
+    if UPTON.is_dir():
+        for tp in sorted(UPTON.glob("upton-*.txt")):
+            text = tp.read_text(errors="ignore").strip()
+            if len(text) < 400:
+                continue
+            for chi, ch in enumerate(chunk_text(text)[:12]):
+                items.append({"id": f"canon:upton:{tp.stem}:{chi}",
+                              "kind": "canon",
+                              "label": f"Beth Upton interview ({tp.stem})",
+                              "url": f"abhidhamma/transcripts/pa-auk/{tp.name}",
+                              "themes": ["Beth Upton", "Pa Auk", "Abhidhamma"],
+                              "text": ch[:2000]})
     # 5. own bank: tomnotes diaries, essays, prior chats (your words first)
     if TOMNOTES.is_dir():
         conv_file = TOMNOTES / "diary training data.txt"
