@@ -24,7 +24,7 @@ function page(title, inner) {
       `font-family:monospace;font-size:1rem;cursor:pointer;` +
       `margin-bottom:.3rem}` +
       `#nav div{margin-bottom:.6rem}` +
-      `#nav div a{display:block;padding:.7rem 0;font-size:1rem}` +
+      `#nav div a{display:block;border:1px solid #000;text-align:center;padding:.5rem .2rem;margin-bottom:.3rem;text-decoration:none;font-size:.9rem}` +
       `body{touch-action:manipulation}` +
       `#main{flex:1;min-width:0}` +
       `textarea{width:100%;box-sizing:border-box;font-family:monospace;` +
