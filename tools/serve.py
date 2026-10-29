@@ -223,6 +223,30 @@ class H(BaseHTTPRequestHandler):
                 _q = _q / (_np.linalg.norm(_q) + 1e-9)
                 _order = _np.argsort(-(_mat @ _q))[:20]
                 _cands = [_items[int(i)] for i in _order]
+                # graph stage: roots of any matched tensions -> dharma-tech concept retrieval
+                try:
+                    sys.path.insert(0, str(ROOT / "tools"))
+                    from dharma_engine import relay_for_roots as _grr
+                    _tids = set()
+                    for _c in _cands:
+                        _cid = _c.get("id", "")
+                        if _cid.startswith("tension:"):
+                            _tids.add(_cid.split(":", 1)[1])
+                        elif _c.get("url", "").startswith("tensions/"):
+                            _tids.add(Path(_c["url"]).stem)
+                    _groots = set()
+                    for _tp in (ROOT / "tensions").glob("*.md"):
+                        _h, _ = header(_tp)
+                        if _h.get("id") in _tids or _tp.stem in _tids:
+                            _groots.update(_h.get("roots", []))
+                    for _g in _grr(sorted(_groots), top_n=3):
+                        _gk = _g["id"].split(":")[-1].replace("tension-", "")
+                        if _gk not in {c["id"].split(":")[-1].replace("tension-", "") for c in _cands}:
+                            _cands.append({"id": _g["id"], "kind": _g["kind"],
+                                           "label": _g["label"], "url": _g["url"],
+                                           "text": _g["text"]})
+                except Exception as e:
+                    print("graph stage unavailable:", str(e)[:200])
                 for _i in _rr(clean[-1]["content"], [c["text"][:1000] for c in _cands])[:5]:
                     relay.append(_cands[_i])
                 sources = [{"label": r["label"], "url": r["url"]} for r in relay]

@@ -1,0 +1,15 @@
+{"source": "tension-coffee-addiction", "target": "lobha", "relation": "diagnosed_as", "text_id": "coffee-addiction"}
+{"source": "tension-coffee-addiction", "target": "moha", "relation": "diagnosed_as", "text_id": "coffee-addiction"}
+{"source": "tension-debt-1500", "target": "moha", "relation": "diagnosed_as", "text_id": "debt-1500"}
+{"source": "tension-debt-1500", "target": "dosa", "relation": "diagnosed_as", "text_id": "debt-1500"}
+{"source": "tension-hidden-sexuality-shame", "target": "dosa", "relation": "diagnosed_as", "text_id": "hidden-sexuality-shame"}
+{"source": "tension-hidden-sexuality-shame", "target": "moha", "relation": "diagnosed_as", "text_id": "hidden-sexuality-shame"}
+{"source": "roots-greed-lobha", "target": "lobha", "relation": "explains", "text_id": "greed-lobha.md"}
+{"source": "roots-hatred-dosa", "target": "dosa", "relation": "explains", "text_id": "hatred-dosa.md"}
+{"source": "roots-delusion-moha", "target": "moha", "relation": "explains", "text_id": "delusion-moha.md"}
+{"source": "roots-antidotes", "target": "alobha", "relation": "explains", "text_id": "antidotes.md"}
+{"source": "roots-antidotes", "target": "adosa", "relation": "explains", "text_id": "antidotes.md"}
+{"source": "roots-antidotes", "target": "amoha", "relation": "explains", "text_id": "antidotes.md"}
+{"source": "roots-abhidhamma", "target": "lobha", "relation": "explains", "text_id": "abhidhamma.md"}
+{"source": "roots-abhidhamma", "target": "dosa", "relation": "explains", "text_id": "abhidhamma.md"}
+{"source": "roots-abhidhamma", "target": "moha", "relation": "explains", "text_id": "abhidhamma.md"}

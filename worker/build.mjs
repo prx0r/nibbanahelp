@@ -19,6 +19,7 @@ writeFileSync(
 const files = {};
 const anchors = {};
 const dayGroups = {};
+const tensionRoots = {};
 for (const sub of ["entries", "essays"]) {
   for (const f of readdirSync(join(root, sub))) {
     if (!f.endsWith(".md") || f.startsWith("_")) continue;
@@ -33,13 +34,19 @@ for (const sub of ["entries", "essays"]) {
   }
 }
 for (const f of readdirSync(join(root, "tensions"))) {
-  if (!f.endsWith(".md")) continue;
+  if (!f.endsWith(".md") || f.startsWith("_")) continue;
   const text = readFileSync(join(root, "tensions", f), "utf8");
   const i = text.indexOf("---");
   files[`tensions/${f}`] =
     i >= 0 ? text.slice(i + 3).replace(/^\n+/, "") : text;
+  const m = text.match(/^roots:\s*\[(.+?)\]\s*$/m);
+  if (m) tensionRoots[`tensions/${f}`] = m[1].split(",").map((s) => s.trim());
 }
 files["motto.txt"] = readFileSync(join(root, "motto.txt"), "utf8").trim();
+writeFileSync(
+  join(dir, "src", "tension_roots.js"),
+  "export default " + JSON.stringify(tensionRoots) + ";\n"
+);
 
 // grounding context for chat: live tensions + root profiles, truncated
 let context = "LIVE TENSIONS:\n";

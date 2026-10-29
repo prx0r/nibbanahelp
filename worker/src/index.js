@@ -4,6 +4,7 @@ import { GAP } from "./theme.js";
 import CONTEXT from "./context.js";
 import CHAT_PAGE from "./chat_html.js";
 import VIS_PAGE from "./vis_html.js";
+import TENSION_ROOTS from "./tension_roots.js";
 
 const ALLOWED = /^(entries|essays|tensions)\/[^/]+\.md$|^motto\.txt$/;
 
@@ -81,12 +82,37 @@ async function loadRelay(env) {
     env.BRAIN.get("relay/vectors.json").then((r) => (r ? r.json() : {})),
     env.BRAIN.get("relay/index.json").then((r) => (r ? r.json() : [])),
   ]);
-  RELAY = { vecs: v, items: i };
+  let dharma = [], dharmaByConcept = {};
+  try {
+    const [dp, de] = await Promise.all([
+      env.BRAIN.get("relay/dharma/passages.jsonl").then((r) => (r ? r.text() : "")),
+      env.BRAIN.get("relay/dharma/passage_edges.jsonl").then((r) => (r ? r.text() : "")),
+    ]);
+    const byId = {};
+    for (const line of dp.split("\n")) {
+      if (!line.trim()) continue;
+      try { const p = JSON.parse(line); byId[p.id] = p; dharma.push(p); } catch (e) { /* skip */ }
+    }
+    for (const line of de.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const e = JSON.parse(line);
+        (dharmaByConcept[e.target] ||= []).push(e.source);
+      } catch (err) { /* skip */ }
+    }
+    RELAY = { vecs: v, items: i, dharma, dharmaById: byId, dharmaByConcept };
+  } catch (e) {
+    RELAY = { vecs: v, items: i, dharma, dharmaByConcept };
+  }
   return RELAY;
 }
 
+function stemKey(id) {
+  return String(id).split(":").pop().replace(/^tension-/, "");
+}
+
 async function matchPassages(env, query, k = 5) {
-  const { vecs, items } = await loadRelay(env);
+  const { vecs, items, dharma, dharmaById, dharmaByConcept } = await loadRelay(env);
   if (!items.length) return [];
   const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
   const q = emb.data ? emb.data[0] : emb.result.data[0];
@@ -97,22 +123,44 @@ async function matchPassages(env, query, k = 5) {
     scored.push([cosine(q, v), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
-  const top = scored.slice(0, 20);
-  if (!top.length) return [];
-  let ranked = top;
+  let cands = scored.slice(0, 20).map(([, item]) => item);
+  // graph stage: roots of matched tensions -> concept-constrained passages
+  try {
+    const roots = new Set();
+    for (const c of cands) {
+      let tid = null;
+      if (typeof c.id === "string" && c.id.startsWith("tension:")) tid = "tensions/" + c.id.slice(8) + ".md";
+      else if (typeof c.url === "string" && c.url.startsWith("tensions/")) tid = c.url;
+      const rs = tid && TENSION_ROOTS[tid];
+      if (rs) rs.forEach((r) => roots.add(r));
+    }
+    const seen = new Set(cands.map((c) => stemKey(c.id)));
+    for (const r of roots) {
+      for (const pid of (dharmaByConcept[r] || []).slice(0, 3)) {
+        if (seen.has(stemKey(pid))) continue;
+        seen.add(stemKey(pid));
+        const p = dharmaById[pid];
+        if (!p) continue;
+        cands.push({ id: pid, kind: "graph", label: p.summary || p.text_id || pid,
+                     url: p.text_id || "", text: p.text || "" });
+      }
+    }
+  } catch (e) { /* graph stage optional */ }
+  cands = cands.slice(0, 26);
+  let ranked = cands;
   try {
     const rr = await env.AI.run("@cf/baai/bge-reranker-base", {
       query,
-      contexts: top.map(([, item]) => ({ text: item.text.slice(0, 1000) })),
+      contexts: ranked.map((item) => ({ text: (item.text || "").slice(0, 1000) })),
     });
     const order = (rr.response || rr.result?.response || [])
       .slice()
       .sort((a, b) => b.score - a.score)
       .map((r) => r.id)
-      .filter((i) => i < top.length);
-    if (order.length) ranked = order.map((i) => top[i]);
+      .filter((i) => Number.isInteger(i) && i >= 0 && i < ranked.length);
+    if (order.length) ranked = order.map((i) => ranked[i]);
   } catch (e) { /* fall back to cosine order */ }
-  return ranked.slice(0, k).map(([, item]) => item);
+  return ranked.slice(0, k);
 }
 
 function livePage() {

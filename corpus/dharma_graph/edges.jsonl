@@ -1,0 +1,6 @@
+{"id": "n01", "source": "moha", "target": "lobha", "relation": "accompanies", "tradition": "theravada", "weight": 1.0, "notes": "Moha is present in every akusala citta, including all 8 lobha-rooted ones."}
+{"id": "n02", "source": "moha", "target": "dosa", "relation": "accompanies", "tradition": "theravada", "weight": 1.0, "notes": "Moha is present in both dosa-rooted cittas."}
+{"id": "n03", "source": "asevana", "target": "javana", "relation": "conditions", "tradition": "theravada", "weight": 1.0, "notes": "Repetition condition: each javana feeds the next."}
+{"id": "n04", "source": "alobha", "target": "lobha", "relation": "opposes", "tradition": "theravada", "weight": 1.0, "notes": "Wholesome counterpart."}
+{"id": "n05", "source": "adosa", "target": "dosa", "relation": "opposes", "tradition": "theravada", "weight": 1.0, "notes": "Wholesome counterpart."}
+{"id": "n06", "source": "amoha", "target": "moha", "relation": "opposes", "tradition": "theravada", "weight": 1.0, "notes": "Wholesome counterpart."}
