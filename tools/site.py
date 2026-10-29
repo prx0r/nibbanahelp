@@ -104,6 +104,11 @@ function renderFor(el, text) {
   return el.dataset.kind === 'motto' ? renderMotto(text) : render(text);
 }
 function show(id) {
+  if (window.__editing) {
+    var ae = document.activeElement;
+    if (ae && ae.tagName === 'TEXTAREA') ae.blur();
+    if (window.__editing) return;
+  }
   var blocks = document.querySelectorAll('#main [data-blk]');
   for (var i = 0; i < blocks.length; i++) {
     blocks[i].style.display = blocks[i].dataset.blk === id ? '' : 'none';
@@ -115,13 +120,16 @@ document.addEventListener('click', function (e) {
   if (sh) { e.preventDefault(); show(sh.dataset.show); return; }
   var el = e.target.closest ? e.target.closest('[data-f]') : null;
   if (!el || el.dataset.open) return;
+  e.preventDefault();
+  if (e.stopPropagation) e.stopPropagation();
+  window.__editing = true;
   el.dataset.open = '1';
   var raw = el.dataset.raw;
   var cs = window.getComputedStyle(el);
   var ta = document.createElement('textarea');
   ta.value = raw;
   ta.style.display = 'block';
-  ta.style.width = '100%';
+  ta.style.width = el.offsetWidth + 'px';
   ta.style.boxSizing = 'border-box';
   ta.style.margin = '0';
   ta.style.padding = '0';
@@ -141,6 +149,7 @@ document.addEventListener('click', function (e) {
   function swapBack() {
     el.innerHTML = renderFor(el, el.dataset.raw);
     delete el.dataset.open;
+    window.__editing = false;
     el.style.display = '';
     ta.remove();
   }
@@ -335,9 +344,10 @@ PAGE = """<!doctype html>
   #nav div a {{ display: block; padding: .7rem 0; font-size: 1rem; }}
   body {{ touch-action: manipulation; }}
   #main {{ flex: 1; min-width: 0; }}
-  .motto {{ font-style: italic; text-align: center; }}
-  .motto-blk, pre.blk {{ cursor: text; }}
-  pre.blk {{ cursor: text; }}
+  pre.blk {{ width: fit-content; max-width: 100%; cursor: text; }}
+  .motto-blk {{ text-align: center; cursor: default; }}
+  .motto {{ display: inline-block; font-style: italic; text-align: center;
+    cursor: text; }}
   textarea {{ width: 100%; box-sizing: border-box; font-family: monospace;
     font-size: 1rem; }}
 </style>

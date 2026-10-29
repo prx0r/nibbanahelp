@@ -13,6 +13,9 @@ function page(title, inner) {
       `margin:0;padding:0 ${GAP}}` +
       `a{color:#000}` +
       `pre{white-space:pre-wrap;font-family:monospace}` +
+      `pre.blk{width:fit-content;max-width:100%;cursor:text}` +
+      `.motto-blk{text-align:center;cursor:default}` +
+      `.motto{display:inline-block;font-style:italic;text-align:center;cursor:text}` +
       `#wrap{display:flex}` +
       `#nav{flex-shrink:0;padding-top:1rem;padding-right:${GAP};` +
       `font-size:.8rem}` +
@@ -24,8 +27,6 @@ function page(title, inner) {
       `#nav div a{display:block;padding:.7rem 0;font-size:1rem}` +
       `body{touch-action:manipulation}` +
       `#main{flex:1;min-width:0}` +
-      `.motto{font-style:italic;text-align:center}` +
-      `.motto-blk,pre.blk{cursor:text}` +
       `textarea{width:100%;box-sizing:border-box;font-family:monospace;` +
       `font-size:1rem;border:1px solid #000;padding:.5rem}` +
       `button{background:#000;color:#fff;border:0;padding:.6rem 1.2rem;` +
