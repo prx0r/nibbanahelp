@@ -137,7 +137,6 @@ document.addEventListener('click', function (e) {
   ta.style.fontStyle = cs.fontStyle;
   ta.style.fontWeight = cs.fontWeight;
   function fit() { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
-  fit();
   var timer = null, dirty = false, lastOk = true, closed = false;
   function swapBack() {
     el.innerHTML = renderFor(el, el.dataset.raw);
@@ -168,6 +167,7 @@ document.addEventListener('click', function (e) {
   });
   el.style.display = 'none';
   el.parentNode.insertBefore(ta, el.nextSibling);
+  fit();
   try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
 });
 (function initViewer() {
