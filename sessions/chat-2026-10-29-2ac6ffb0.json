@@ -1,0 +1,22 @@
+{
+ "date": "2026-10-29",
+ "via": "serve",
+ "messages": [
+  {
+   "role": "user",
+   "content": "not sure what to do at night, I want to stay up and meditate sitting down and not sleeping"
+  },
+  {
+   "role": "assistant",
+   "content": "\"[lived-log] DhO: Barros's Pratice Log #5 :: https://www.dharmaoverground.org/discussion/-/message_boards/message/32953936\" \nHelpful: \"In mindful equanimity, you are aware of the texture, feeling, tone, and\"\n\nIs there restlessness or aversion to sleep in this desire to stay up and meditate?"
+  }
+ ],
+ "relayed": [
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/32953936",
+  "plog:https://awakenetwork.org/forum/kfd-archive-v2/13359",
+  "plog:https://awakenetwork.org/forum/kfd-archive-wetpaint/12102",
+  "tension:hidden-sexuality-shame",
+  "clip/ny71L92YnFk",
+  "clip/nFlIkr4qrL4"
+ ]
+}
