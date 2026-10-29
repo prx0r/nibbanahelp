@@ -1,0 +1,23 @@
+{
+ "date": "2026-10-29",
+ "via": "serve",
+ "messages": [
+  {
+   "role": "user",
+   "content": "not sure what to do at night, I want to stay up and meditate sitting down and not sleeping"
+  },
+  {
+   "role": "assistant",
+   "content": "From [teacher-answer] why night meditation bites back (practice-timing guidance) :: https://www.artofliving.org/us-en/blog/can-not-sleep-why-meditation-at-night-might-be-keeping-you-up-late, it's noted that \"energising breath/mantra work done at night can keep you awake for hours; dulling practices clouded by sleepiness lose clarity benefits.\"\n\nWhat is driving your desire to stay up and meditate at night?"
+  }
+ ],
+ "relayed": [
+  "tension:hidden-sexuality-shame",
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/32953936",
+  "plog:https://awakenetwork.org/forum/kfd-archive-v2/13359",
+  "plog:https://www.dharmaoverground.org/discussion/-/message_boards/message/5569096",
+  "curated:night-meditation-effects",
+  "clip/ny71L92YnFk",
+  "clip/nFlIkr4qrL4"
+ ]
+}
