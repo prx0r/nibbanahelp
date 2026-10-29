@@ -72,7 +72,6 @@ export default {
         `<form method=post action=/save>` +
           `<input type=hidden name=f value="${f}">` +
           `<textarea name=body rows=30>${esc(body)}</textarea><br>` +
-          `<label>password <input type=password name=pw></label><br><br>` +
           `<button>save</button></form>` +
           `<p><a href='/'>back (discard)</a></p>`
       );
@@ -80,9 +79,6 @@ export default {
 
     if (url.pathname === "/save" && req.method === "POST") {
       const form = await req.formData();
-      if (form.get("pw") !== env.EDIT_PASSWORD) {
-        return new Response("wrong password", { status: 401 });
-      }
       const f = form.get("f");
       const body = form.get("body");
       if (typeof f !== "string" || !ALLOWED.test(f) || !(f in FILES)) {
