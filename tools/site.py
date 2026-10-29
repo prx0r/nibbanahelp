@@ -127,10 +127,15 @@ document.addEventListener('click', function (e) {
   el.dataset.open = '1';
   var raw = el.dataset.raw;
   var cs = window.getComputedStyle(el);
+  var prevPos = el.style.position;
+  if (cs.position === 'static') el.style.position = 'relative';
   var ta = document.createElement('textarea');
   ta.value = raw;
-  ta.style.display = 'block';
-  ta.style.width = el.offsetWidth + 'px';
+  ta.style.position = 'absolute';
+  ta.style.top = '0';
+  ta.style.left = '0';
+  ta.style.width = '100%';
+  ta.style.height = '100%';
   ta.style.boxSizing = 'border-box';
   ta.style.margin = '0';
   ta.style.padding = '0';
@@ -138,20 +143,22 @@ document.addEventListener('click', function (e) {
   ta.style.outline = 'none';
   ta.style.background = 'transparent';
   ta.style.resize = 'none';
-  ta.style.overflow = 'hidden';
+  ta.style.overflow = 'auto';
+  ta.style.visibility = 'visible';
   ta.style.whiteSpace = 'pre-wrap';
   ta.style.fontFamily = cs.fontFamily;
   ta.style.fontSize = cs.fontSize;
   ta.style.lineHeight = cs.lineHeight;
   ta.style.fontStyle = cs.fontStyle;
   ta.style.fontWeight = cs.fontWeight;
-  function fit() { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  ta.style.visibility = 'visible';
   var timer = null, dirty = false, lastOk = true, closed = false;
   function swapBack() {
     el.innerHTML = renderFor(el, el.dataset.raw);
     delete el.dataset.open;
     window.__editing = false;
-    el.style.display = '';
+    el.style.visibility = '';
+    el.style.position = prevPos;
     ta.remove();
   }
   function save() {
@@ -166,7 +173,6 @@ document.addEventListener('click', function (e) {
   }
   ta.addEventListener('input', function () {
     dirty = true; lastOk = true; ta.style.outline = 'none';
-    fit();
     clearTimeout(timer);
     timer = setTimeout(function () { if (dirty) { dirty = false; save(); } }, 1200);
   });
@@ -175,9 +181,8 @@ document.addEventListener('click', function (e) {
     if (dirty) { dirty = false; closed = true; save(); }
     else if (lastOk) { swapBack(); }
   });
-  el.style.display = 'none';
-  el.parentNode.insertBefore(ta, el.nextSibling);
-  fit();
+  el.style.visibility = 'hidden';
+  el.appendChild(ta);
   try { ta.focus({ preventScroll: true }); } catch (e) { ta.focus(); }
 });
 (function initViewer() {
