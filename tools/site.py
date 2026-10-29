@@ -60,11 +60,14 @@ def motto_block() -> str:
             + motto_html(text) + "</div>")
 
 
-def block(anchor: str, fpath: str, body: str) -> str:
-    return (f"<span id=\"{anchor}\"></span>"
-            f"<pre class=\"blk\" data-f=\"{fpath}\" "
-            f"data-raw=\"{html.escape(body, quote=True)}\">"
-            f"{render(body)}</pre>")
+def block(anchor: str, fpath: str, body: str, viewer: bool = True) -> str:
+    pre = (f"<pre class=\"blk\" data-f=\"{fpath}\" "
+           f"data-raw=\"{html.escape(body, quote=True)}\">"
+           f"{render(body)}</pre>")
+    if not viewer:
+        return pre
+    return (f"<div data-blk=\"{anchor}\">"
+            f"<span id=\"{anchor}\"></span>{pre}</div>")
 
 
 JS = r"""
@@ -100,7 +103,16 @@ function renderMotto(src) {
 function renderFor(el, text) {
   return el.dataset.kind === 'motto' ? renderMotto(text) : render(text);
 }
+function show(id) {
+  var blocks = document.querySelectorAll('#main [data-blk]');
+  for (var i = 0; i < blocks.length; i++) {
+    blocks[i].style.display = blocks[i].dataset.blk === id ? '' : 'none';
+  }
+  try { localStorage.setItem('nib-last', id); } catch (e) {}
+}
 document.addEventListener('click', function (e) {
+  var sh = e.target.closest ? e.target.closest('[data-show]') : null;
+  if (sh) { e.preventDefault(); show(sh.dataset.show); return; }
   var el = e.target.closest ? e.target.closest('[data-f]') : null;
   if (!el || el.dataset.open) return;
   el.dataset.open = '1';
@@ -143,6 +155,17 @@ document.addEventListener('click', function (e) {
   el.parentNode.insertBefore(ta, el.nextSibling);
   ta.focus();
 });
+(function initViewer() {
+  var blocks = document.querySelectorAll('#main [data-blk]');
+  if (!blocks.length) return;
+  var last = null;
+  try { last = localStorage.getItem('nib-last'); } catch (e) {}
+  var ok = false;
+  for (var i = 0; i < blocks.length; i++) {
+    if (blocks[i].dataset.blk === last) { ok = true; break; }
+  }
+  show(ok ? last : blocks[blocks.length - 1].dataset.blk);
+})();
 """
 
 
@@ -224,9 +247,10 @@ def sidebar(days, link_uploads):
         d = days[day]
         kids = []
         for n, (_stem, _body, _rp, _ek) in enumerate(d["entries"]):
-            kids.append(f"<a href=\"#d{day}-e{n}\">diary</a>")
+            kids.append(f"<a href=\"#\" data-show=\"d{day}-e{n}\">diary</a>")
         for n, (_stem, _body, _rp, ek) in enumerate(d["essays"]):
-            kids.append(f"<a href=\"#d{day}-s{n}\">{ek or 'essay'}</a>")
+            kids.append(f"<a href=\"#\" data-show=\"d{day}-s{n}\">"
+                        f"{ek or 'essay'}</a>")
         for r in d["uploads"]:
             kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
                         f"{ukind(r['file'])}</a>")
@@ -252,7 +276,7 @@ def content(days):
 def tension_blocks(tensions):
     out = []
     for i, (tid, body) in enumerate(tensions):
-        out.append(block(f"t{i}", f"tensions/{tid}.md", body))
+        out.append(block(f"t{i}", f"tensions/{tid}.md", body, viewer=False))
     return "\n".join(out)
 
 
