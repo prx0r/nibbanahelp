@@ -1,5 +1,8 @@
 # nibbanahelp — agent instructions
 
+> **Read `HANDOVER.md` first** — orientation, file map, live ops, gotchas.
+> This file is the rules; that file is the state of the world.
+
 Shared second brain of diaries from people attaining nibbana. Markdown +
 git, white page frontend, Cloudflare worker. Public by practice.
 
