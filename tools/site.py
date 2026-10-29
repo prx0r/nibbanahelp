@@ -13,8 +13,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "site" / "index.html"
 
 
-def raw(src: str) -> str:
-    # Exactly what was written, in a <pre>. Only four things render:
+def render(src: str) -> str:
+    # Exactly what was written. Only four things render:
     # **bold**, __underline__, *italic*, and # headings as bold.
     # Everything else literal.
     lines = []
@@ -24,7 +24,82 @@ def raw(src: str) -> str:
             lines.append(f"<strong>{inline3(m.group(1))}</strong>")
         else:
             lines.append(inline3(line))
-    return "<pre>" + "\n".join(lines) + "</pre>"
+    return "\n".join(lines)
+
+
+def raw(src: str) -> str:
+    return "<pre>" + render(src) + "</pre>"
+
+
+def block(anchor: str, fpath: str, body: str) -> str:
+    return (f"<span id=\"{anchor}\"></span>"
+            f"<pre class=\"blk\" data-f=\"{fpath}\" "
+            f"data-raw=\"{html.escape(body, quote=True)}\">"
+            f"{render(body)}</pre>")
+
+
+JS = r"""
+function t(id) {
+  var e = document.getElementById(id);
+  e.style.display = e.style.display === 'none' ? 'block' : 'none';
+}
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function inline3(s) {
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g, '<u>$1</u>');
+  s = s.replace(/\*([^\*\n]+)\*/g, '<em>$1</em>');
+  return s;
+}
+function render(src) {
+  return esc(src).split('\n').map(function (line) {
+    var m = line.match(/^(#{1,6})\s+(.*)$/);
+    if (m) return '<strong>' + inline3(m[2]) + '</strong>';
+    return inline3(line);
+  }).join('\n');
+}
+document.addEventListener('click', function (e) {
+  var pre = e.target.closest ? e.target.closest('pre.blk') : null;
+  if (!pre || pre.dataset.open) return;
+  pre.dataset.open = '1';
+  var ta = document.createElement('textarea');
+  ta.rows = Math.max(4, pre.dataset.raw.split('\n').length + 1);
+  ta.value = pre.dataset.raw;
+  ta.style.width = '100%';
+  ta.style.boxSizing = 'border-box';
+  var timer = null, dirty = false, lastOk = true, closed = false;
+  function swapBack() {
+    pre.innerHTML = render(pre.dataset.raw);
+    delete pre.dataset.open;
+    pre.style.display = '';
+    ta.remove();
+  }
+  function save() {
+    var body = new URLSearchParams({ f: pre.dataset.f, body: ta.value });
+    fetch('save', { method: 'POST', body: body }).then(function (r) {
+      if (!r.ok) throw 0;
+      pre.dataset.raw = ta.value;
+      lastOk = true;
+      ta.style.border = '';
+      if (closed) swapBack();
+    }).catch(function () { lastOk = false; ta.style.border = '1px solid red'; });
+  }
+  ta.addEventListener('input', function () {
+    dirty = true; lastOk = true; ta.style.border = '';
+    clearTimeout(timer);
+    timer = setTimeout(function () { if (dirty) { dirty = false; save(); } }, 1200);
+  });
+  ta.addEventListener('blur', function () {
+    clearTimeout(timer);
+    if (dirty) { dirty = false; closed = true; save(); }
+    else if (lastOk) { swapBack(); }
+  });
+  pre.style.display = 'none';
+  pre.parentNode.insertBefore(ta, pre.nextSibling);
+  ta.focus();
+});
+"""
 
 
 def inline3(s: str) -> str:
@@ -91,7 +166,7 @@ def collect():
     tensions = []
     for p in sorted((ROOT / "tensions").glob("*.md")):
         h, body = header(p)
-        if h.get("status") == "open":
+        if h.get("status") in ("open", "loosening"):
             tensions.append((h.get("id", p.stem), body))
     return days, tensions
 
@@ -128,10 +203,17 @@ def content(days):
     out = []
     for day in sorted(days, key=daykey):
         d = days[day]
-        for n, (_stem, body, _rp) in enumerate(d["entries"]):
-            out.append(f"<span id=\"d{day}-e{n}\"></span>" + raw(body))
-        for n, (_stem, body, _rp) in enumerate(d["essays"]):
-            out.append(f"<span id=\"d{day}-s{n}\"></span>" + raw(body))
+        for n, (_stem, body, rp) in enumerate(d["entries"]):
+            out.append(block(f"d{day}-e{n}", rp, body))
+        for n, (_stem, body, rp) in enumerate(d["essays"]):
+            out.append(block(f"d{day}-s{n}", rp, body))
+    return "\n".join(out)
+
+
+def tension_blocks(tensions):
+    out = []
+    for i, (tid, body) in enumerate(tensions):
+        out.append(block(f"t{i}", f"tensions/{tid}.md", body))
     return "\n".join(out)
 
 
@@ -144,14 +226,16 @@ def main():
         if f.is_file() and f.name != "manifest.json":
             shutil.copy(f, updir / f.name)
     nav = sidebar(days, lambda fn: f"uploads/{fn}")
-    body = content(days) + "\n".join(raw(t[1]) for t in tensions)
+    body = content(days) + tension_blocks(tensions)
     motto = ""
     mp = ROOT / "motto.txt"
     if mp.is_file():
-        motto = mp.read_text().strip()
+        motto = "".join(f"<p class=motto>{html.escape(line)}</p>"
+                         for line in mp.read_text().splitlines()
+                         if line.strip())
 
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto))
+    OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS))
     print(f"wrote {OUT.relative_to(ROOT)}")
 
 
@@ -175,16 +259,16 @@ PAGE = """<!doctype html>
   #nav div {{ font-size: .8rem; margin-bottom: .6rem; }}
   #main {{ flex: 1; min-width: 0; }}
   .motto {{ color: #888; font-style: italic; }}
+  pre.blk {{ cursor: text; }}
+  textarea {{ width: 100%; box-sizing: border-box; font-family: monospace;
+    font-size: 1rem; }}
 </style>
 </head>
 <body>
-<p class=motto>{motto}</p>
+{motto}
 <div id=wrap>{nav}<div id=main>{body}</div></div>
 <script>
-function t(id) {{
-  var e = document.getElementById(id);
-  e.style.display = e.style.display === 'none' ? 'block' : 'none';
-}}
+{js}
 </script>
 </body>
 </html>

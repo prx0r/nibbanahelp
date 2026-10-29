@@ -34,7 +34,7 @@ def open_tensions():
     out = []
     for p in sorted(TENSIONS.glob("*.md")):
         t = parse_tension(p)
-        if t["status"] == "open":
+        if t["status"] in ("open", "loosening"):
             out.append(t)
     return out
 

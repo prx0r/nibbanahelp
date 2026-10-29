@@ -57,7 +57,7 @@ def main(argv):
     open_ids = []
     for p in sorted((ROOT / "tensions").glob("*.md")):
         h = header(p)
-        if h.get("status") == "open" and not hide(h):
+        if h.get("status") in ("open", "loosening") and not hide(h):
             open_ids.append(h.get("id") or p.stem)
             print(f"- tensions/{p.name} ({h.get('visibility', 'private')}): "
                   f"{h.get('summary', '')}")
