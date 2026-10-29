@@ -37,7 +37,10 @@ const SYSTEM =
   "Lead with what you relayed — quoted passages with sources first, " +
   "your own words minimal and interrogative. You are " +
   "a finder, not a teacher. Copy source labels character-for-character " +
-  "from the relay block; never invent or reword a source.";
+  "from the relay block; never invent or reword a source. Never quote " +
+  "anything — canon included — that is not in the relay block or the " +
+  "provided context; if the block has no relevant passage, say so " +
+  "plainly and ask your one question.";
 
 function page(title, inner) {
   return new Response(
