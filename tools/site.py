@@ -346,9 +346,7 @@ PAGE = """<!doctype html>
     font-family: monospace; font-size: 1rem; cursor: pointer;
     margin-bottom: .3rem; padding: 0; }}
   #nav div {{ margin-bottom: .6rem; }}
-  #nav div a {{ display: block; border: 1px solid #000; text-align: center;
-    padding: .5rem .2rem; margin-bottom: .3rem; text-decoration: none;
-    font-size: .9rem; }}
+  #nav div a {{ display: block; padding: .15rem 0; }}
   body {{ touch-action: manipulation; }}
   #main {{ flex: 1; min-width: 0; }}
   pre.blk {{ width: fit-content; max-width: 100%; cursor: text; }}
