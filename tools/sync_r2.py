@@ -49,6 +49,58 @@ def main():
         return
     applied = []
     for key in keys:
+        if key.startswith("pending/uploadmeta/"):
+            continue
+        if key.startswith("pending/upload/"):
+            meta_key = key.replace("pending/upload/",
+                                   "pending/uploadmeta/", 1)
+            meta = {}
+            try:
+                meta = json.loads(s3.get_object(
+                    Bucket=B, Key=meta_key)["Body"].read())
+            except Exception:
+                pass
+            blob = s3.get_object(Bucket=B, Key=key)["Body"].read()
+            name = key.split("/", 2)[-1]
+            dest = ROOT / "uploads" / name
+            n = 2
+            while dest.exists():
+                dest = ROOT / "uploads" / f"{dest.stem}-{n}{dest.suffix}"
+                n += 1
+            dest.write_bytes(blob)
+            try:
+                sys.path.insert(0, str(ROOT / "tools"))
+                from characterise import classify_bytes
+                kind = classify_bytes(blob, dest.name)
+            except Exception:
+                kind = None
+            from datetime import datetime as _dt, timezone as _tz
+            DAY1 = __import__("datetime").date(2026, 10, 28)
+            now = _dt.now(_tz.utc)
+            today = max(1, (now.date() - DAY1).days + 1)
+            try:
+                day_val = int(meta.get("day") or 0) or today
+            except Exception:
+                day_val = today
+            backfill = bool(meta.get("backfill")) or day_val < today
+            mpath = ROOT / "uploads" / "manifest.json"
+            rows = []
+            if mpath.is_file():
+                try:
+                    rows = json.loads(mpath.read_text())
+                except Exception:
+                    rows = []
+            rows.append({"file": dest.name,
+                         "uploaded_at": now.isoformat(timespec="seconds"),
+                         "backfill": backfill,
+                         "note": meta.get("note", ""),
+                         "day": day_val, "kind": kind})
+            mpath.write_text(json.dumps(rows, indent=1) + "\n")
+            s3.delete_object(Bucket=B, Key=key)
+            s3.delete_object(Bucket=B, Key=meta_key)
+            applied.append(str(dest.relative_to(ROOT)))
+            print("applied upload:", dest.name, kind, "day", day_val)
+            continue
         if key.startswith("pending/chat/"):
             name = key[len("pending/chat/"):]
             if not re.match(r"^[\w][\w.\-/]*\.json$", name) or ".." in name:

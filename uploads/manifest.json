@@ -1,1 +1,10 @@
-[]
+[
+ {
+  "file": "1793300000000-sync-test-poem.txt",
+  "uploaded_at": "2026-10-29T08:06:59+00:00",
+  "backfill": true,
+  "note": "sync test",
+  "day": 1,
+  "kind": "poem"
+ }
+]

@@ -30,7 +30,7 @@
     font-size: 1rem; }
 </style>
 </head>
-<body>
+<body data-today="2">
 <div class="motto-blk" data-f="motto.txt" data-kind="motto" data-raw="with each and every breath i create the conditions for liberation
 the only delusion is that nibbana cannot be attained in this very moment"><div class=motto-line><p class=motto style="color:#555">"with each and every breath i create the conditions for liberation"</p></div>
 <div class=motto-line><p class=motto style="color:#333">"the only delusion is that nibbana cannot be attained in this very moment"</p></div></div>
@@ -211,6 +211,20 @@ This is why nibbana is so tough I think, because necessarily it means you must c
 No resolution yet. Named and logged.</pre></div></div>
 <script>
 
+function up(day){
+  var i=document.createElement('input');
+  i.type='file';
+  i.onchange=function(){
+    if(!this.files.length)return;
+    var fd=new FormData();
+    fd.append('file',this.files[0]);
+    fd.append('day',String(day));
+    var today=parseInt(document.body.getAttribute('data-today')||'1',10);
+    if(day<today)fd.append('backfill','1');
+    fetch('upload',{method:'POST',body:fd}).then(function(){location.reload();});
+  };
+  i.click();
+}
 function t(id) {
   var e = document.getElementById(id);
   e.style.display = e.style.display === 'none' ? 'block' : 'none';

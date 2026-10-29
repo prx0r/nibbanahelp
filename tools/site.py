@@ -72,6 +72,20 @@ def block(anchor: str, fpath: str, body: str, viewer: bool = True) -> str:
 
 
 JS = r"""
+function up(day){
+  var i=document.createElement('input');
+  i.type='file';
+  i.onchange=function(){
+    if(!this.files.length)return;
+    var fd=new FormData();
+    fd.append('file',this.files[0]);
+    fd.append('day',String(day));
+    var today=parseInt(document.body.getAttribute('data-today')||'1',10);
+    if(day<today)fd.append('backfill','1');
+    fetch('upload',{method:'POST',body:fd}).then(function(){location.reload();});
+  };
+  i.click();
+}
 function t(id) {
   var e = document.getElementById(id);
   e.style.display = e.style.display === 'none' ? 'block' : 'none';
@@ -538,8 +552,9 @@ def main():
     motto = motto_block()
 
     OUT.parent.mkdir(exist_ok=True)
+    today = (max((int(d) for d in days if str(d).isdigit()), default=0) + 1)
     OUT.write_text(PAGE.format(nav=nav, body=body, motto=motto, js=JS,
-                               gap=GAP))
+                               gap=GAP, today=today))
     print(f"wrote {OUT.relative_to(ROOT)}")
     (OUT.parent / "chat.html").write_text(CHAT_PAGE)
     print("wrote site/chat.html")
@@ -588,7 +603,7 @@ PAGE = """<!doctype html>
     font-size: 1rem; }}
 </style>
 </head>
-<body>
+<body data-today="{today}">
 {motto}
 <div id=wrap>{nav}<div id=main>{body}</div></div>
 <script>

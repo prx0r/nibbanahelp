@@ -312,6 +312,26 @@ export default {
       return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280), youtube: m.youtube || null, start: m.start || 0 })) }), { headers: { "content-type": "application/json" } });
     }
 
+    if (url.pathname === "/upload" && req.method === "POST") {
+      const form = await req.formData();
+      const file = form.get("file");
+      if (!(file && typeof file.arrayBuffer === "function")) {
+        return new Response("no file", { status: 400 });
+      }
+      const ts = Date.now();
+      const safe = String(file.name || "f").replace(/[\/\\]/g, "_").slice(0, 120);
+      const day = String(form.get("day") || "");
+      const backfill = form.get("backfill") === "1";
+      const note = String(form.get("note") || "").slice(0, 200);
+      const key = `pending/upload/${ts}-${safe}`;
+      await env.BRAIN.put(key, await file.arrayBuffer());
+      await env.BRAIN.put(
+        key.replace("pending/upload/", "pending/uploadmeta/"),
+        JSON.stringify({ day, backfill, note, name: safe }));
+      return new Response("uploaded",
+        { headers: { "content-type": "text/plain" } });
+    }
+
     if (url.pathname === "/save" && req.method === "POST") {
       const form = await req.formData();
       const f = form.get("f");

@@ -121,7 +121,8 @@ def page():
     main = motto + "\n".join(forms) + body
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
-            f"<title>nibbanahelp</title><style>{CSS}</style></head><body>"
+            f"<title>nibbanahelp</title><style>{CSS}</style></head>"
+            f"<body data-today=\"{max((int(d) for d in days if str(d).isdigit()), default=0)+1}\">"
             f"<div id=wrap>{nav}<div id=main>{main}</div></div>"
             f"<script>{JS}</script></body></html>")
 
@@ -436,11 +437,26 @@ class H(BaseHTTPRequestHandler):
             i += 1
         dest.write_bytes(blob)
         now = datetime.now(timezone.utc)
+        try:
+            sys.path.insert(0, str(ROOT / "tools"))
+            from characterise import classify_bytes
+            kind = classify_bytes(blob, dest.name)
+        except Exception:
+            kind = None
+        posted_day = None
+        for _ch in raw.split(bound):
+            if b'name="day"' in _ch:
+                _b = _ch.split(b"\r\n\r\n", 1)[-1].rstrip(b"\r\n--")
+                _v = _b.decode("utf-8", "ignore").strip()
+                if _v.isdigit():
+                    posted_day = int(_v)
+        day_val = posted_day or day_of(now.date())
+        backfill = bool(backfill) or day_val < day_of(now.date())
         rows = manifest()
         rows.append({"file": dest.name,
                      "uploaded_at": now.isoformat(timespec="seconds"),
                      "backfill": backfill, "note": note,
-                     "day": day_of(now.date())})
+                     "day": day_val, "kind": kind})
         save_manifest(rows)
         git("add", f"uploads/{dest.name}", "uploads/manifest.json")
         git("commit", "-q", "-m", f"upload: {dest.name}")
