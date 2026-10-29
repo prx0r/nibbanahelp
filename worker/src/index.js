@@ -161,7 +161,7 @@ async function matchPassages(env, query, k = 5) {
   scored.sort((a, b) => b[0] - a[0]);
   let cands = scored.slice(0, 30).map(([, item]) => item)
     .filter((item) => !(item.kind === "own-chat" &&
-      query.slice(0, 120) in ((item.text || "").slice(0, 300))));
+      (item.text || "").slice(0, 300).includes(query.slice(0, 120))));
   // graph stage: roots of matched tensions -> concept-constrained passages
   try {
     const roots = new Set();
@@ -281,9 +281,10 @@ export default {
       }
       const query = clean[clean.length - 1].content;
       let relay = [];
+      let relayErr = "";
       try {
         relay = await matchPassages(env, query, 5);
-      } catch (e) { /* chat still works without relay */ }
+      } catch (e) { relayErr = String(e && e.message || e); }
       // video tier: satsang clip moments (YouTube id @ second), fail-open.
       // search is keyword-title based: try a short phrase, then single words.
       try {
@@ -340,7 +341,7 @@ export default {
         return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
       }
       await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: query, assistant: reply, relayed: relay.map((m) => m.id) }));
-      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280), youtube: m.youtube || null, start: m.start || 0 })) }), { headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({ reply, relayErr, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280), youtube: m.youtube || null, start: m.start || 0 })) }), { headers: { "content-type": "application/json" } });
     }
 
     if (url.pathname === "/upload" && req.method === "POST") {
