@@ -10,16 +10,19 @@ function page(title, inner) {
       `<title>${title}</title><style>` +
       `body{background:#fff;color:#000;font-family:monospace;` +
       `margin:0;padding:0 1rem}` +
-      `a{color:#000}pre{white-space:pre-wrap;font-family:monospace}` +
+      `a{color:#000}` +
+      `pre{white-space:pre-wrap;font-family:monospace}` +
       `#wrap{display:flex}` +
-      `#nav{width:12rem;flex-shrink:0;padding-top:1rem}` +
+      `#nav{width:2.6rem;flex-shrink:0;padding-top:1rem}` +
       `#nav button{display:block;width:2.2rem;height:2.2rem;` +
       `background:#fff;color:#000;border:1px solid #000;` +
       `font-family:monospace;font-size:1rem;cursor:pointer;` +
       `margin-bottom:.3rem}` +
-      `#nav div{font-size:.8rem;margin-bottom:.6rem}` +
+      `#nav div.kids{position:absolute;z-index:10;background:#fff;` +
+      `border:1px solid #000;padding:.3rem .5rem;font-size:.8rem}` +
       `#main{flex:1;min-width:0}` +
-      `.motto{color:#888;font-style:italic}` +
+      `.motto{font-style:italic}` +
+      `.motto-blk,pre.blk{cursor:text}` +
       `textarea{width:100%;box-sizing:border-box;font-family:monospace;` +
       `font-size:1rem;border:1px solid #000;padding:.5rem}` +
       `button{background:#000;color:#fff;border:0;padding:.6rem 1.2rem;` +

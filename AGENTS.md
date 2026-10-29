@@ -35,6 +35,8 @@ git, white page frontend, Cloudflare worker. Public by practice.
 - Frontend renders raw: no markdown conversion, no font loads, no meta
   chrome. Content in `<pre>`, monospace, white. Never add styling.
 - `motto.txt`: max 5 lines, newest last (darkest). Editable like everything.
+- `worker/src/index.js` carries its own copy of the page CSS (the bundle's
+  `<head>` is discarded at serve time) — keep it in sync with `tools/site.py`.
 - Tools are stdlib (+numpy/sklearn where noted). No new deps without asking.
 - Commit messages: lowercase, short. Push to origin main when asked or when
   a unit of work completes.
