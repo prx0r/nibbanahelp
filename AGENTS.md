@@ -46,8 +46,18 @@ git, white page frontend, Cloudflare worker. Public by practice.
   Index is incremental (new ids only; model change forces a full rebuild).
 - Chat is retrieval-first: embed query → cosine top-20 → bge-reranker
   top-5 → relay with sources. Zero generated advice, always.
-  Own words first: own-tension ×1.35, own-chat ×1.25, canon ×1.1 —
-  same weights in serve, worker, tension.py.
+  Own words first: own-tension ×1.35, own-notes ×1.3, own-chat ×1.25,
+  canon ×1.1 — same weights in serve, worker, tension.py.
+- Composition is tiered, gated on true relevance (raw cosine floor 0.28,
+  0.22 for own-tension anchor): anchor own tension → up to 3 lived →
+  1 lineage → 1 own-past. Empty tiers are skipped, never filled.
+- dharma-tech's GraphRAG runs unmodified against corpus/dharma_graph/
+  (exported by tools/export_dharma_graph.py); tools/dharma_engine.py
+  is the bridge. Concept matches join the relay pool before rerank.
+- tomnotes/ (NOT in repo — /home/box/repos/tomnotes, owner's box) feeds
+  own-notes + own-chat items via build_index. hxrmxs bulk stays out of
+  the worker index until the Vectorize migration (free tier math:
+  ~11k chunks need Vectorize; R2 JSON too fat to ship per request).
 - Proportions are structural: `GAP` in `tools/site.py` is the single value
   for left-edge margin AND nav-to-body gap. serve.py imports it; the worker
   bundle generates `theme.js` from it at build. Never hardcode spacing.

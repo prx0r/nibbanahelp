@@ -36,7 +36,8 @@ const SYSTEM =
   "'you said'. " +
   "Lead with what you relayed — quoted passages with sources first, " +
   "your own words minimal and interrogative. You are " +
-  "a finder, not a teacher.";
+  "a finder, not a teacher. Copy source labels character-for-character " +
+  "from the relay block; never invent or reword a source.";
 
 function page(title, inner) {
   return new Response(
