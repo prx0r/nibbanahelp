@@ -25,7 +25,7 @@ import sys
 from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import parse_qs, quote, unquote
 
 import importlib.util as _ilu
 
@@ -94,23 +94,6 @@ def entry_files():
     return sorted(out)
 
 
-def today_file():
-    files = entry_files()
-    if not files:
-        return None, None
-    top = max(d for d, _ in files)
-    cands = [p for d, p in files if d == top]
-    cands.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return top, cands[0]
-
-
-def split_body(text: str):
-    if "---" in text:
-        head, body = text.split("---", 1)
-        return head + "---\n", body.lstrip("\n")
-    return "", text
-
-
 def page():
     days, tensions = collect()
     forms = ["<form method=post action=/upload enctype=multipart/form-data>"
@@ -118,18 +101,22 @@ def page():
              "<label><input type=checkbox name=backfill value=1> "
              "backfill</label>"
              "<label>note <input type=text name=note></label><br>"
-             "<button>upload</button></form>"]
-    td, tf = today_file()
-    if tf is not None:
-        _head, tbody = split_body(tf.read_text())
-        forms.append("<form method=post action=/save-today>"
-                     f"<textarea name=body rows=30 style='width:100%'>"
-                     f"{html.escape(tbody)}</textarea><br>"
-                     "<button>save today</button></form>"
-                     "<form method=post action=/new-day>"
-                     "<button>submit — start a new day</button></form>")
+             "<button>upload</button></form>",
+             "<form method=post action=/new-day>"
+             "<button>submit — start a new day</button></form>"]
     nav = sidebar(days, lambda fn: f"/files/{fn}")
-    body = (content(days) + "\n".join(raw(t[1]) for t in tensions))
+    bits = []
+    for day in sorted(days, key=lambda x: int(x) if str(x).isdigit() else 0):
+        d = days[day]
+        for n, (_stem, h_body, rp) in enumerate(d["entries"]):
+            bits.append(f"<span id=\"d{day}-e{n}\"></span>")
+            bits.append(f"<p><a href=\"/edit?f={quote(rp)}\">edit</a></p>")
+            bits.append(raw(h_body))
+        for n, (_stem, h_body, rp) in enumerate(d["essays"]):
+            bits.append(f"<span id=\"d{day}-s{n}\"></span>")
+            bits.append(f"<p><a href=\"/edit?f={quote(rp)}\">edit</a></p>")
+            bits.append(raw(h_body))
+    body = "\n".join(bits) + "\n".join(raw(t[1]) for t in tensions)
     main = "\n".join(forms) + body
     return ("<!doctype html><html><head><meta charset=utf-8>"
             "<meta name=viewport content='width=device-width,initial-scale=1'>"
@@ -160,9 +147,31 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def safe_file(self, f: str):
+        if ".." in f or f.startswith("/") or not f.endswith(".md"):
+            return None
+        if not (f.startswith("entries/") or f.startswith("essays/") or
+                f.startswith("tensions/")):
+            return None
+        p = ROOT / f
+        return p if p.is_file() else None
+
     def do_GET(self):
         if self.path == "/":
             self._send(page())
+        elif self.path.startswith("/edit?"):
+            q = parse_qs(unquote(self.path[len("/edit?"):]))
+            p = self.safe_file(q.get("f", [""])[0] or "")
+            if p is None:
+                return self._send("no such file", 404, "text/plain")
+            text = p.read_text()
+            body = text.split("---", 1)[1] if "---" in text else text
+            self._send("<form method=post action=/save-file>"
+                       f"<input type=hidden name=f value=\"{p.relative_to(ROOT)}\">"
+                       f"<textarea name=body rows=30 style='width:100%'>"
+                       f"{html.escape(body.lstrip(chr(10)))}</textarea><br>"
+                       "<button>save</button></form>"
+                       "<p><a href='/'>back (discard)</a></p>")
         elif self.path.startswith("/files/"):
             name = unquote(self.path[len("/files/"):])
             if "/" in name or name.startswith("."):
@@ -183,21 +192,20 @@ class H(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length", 0))
         ctype = self.headers.get("Content-Type", "")
         raw = self.rfile.read(n) if n else b""
-        if self.path == "/save-today" and n and "urlencoded" in ctype:
-            from urllib.parse import parse_qs
+        if self.path == "/save-file" and n and "urlencoded" in ctype:
             f = parse_qs(raw.decode())
+            p = self.safe_file((f.get("f", [""])[0] or ""))
             body = (f.get("body", [""])[0] or "").rstrip() + "\n"
-            td, tf = today_file()
-            if tf is None:
-                return self._send("no today yet", 400)
-            head, _ = split_body(tf.read_text())
-            tf.write_text(head + body)
-            git("add", str(tf.relative_to(ROOT)))
-            git("commit", "-q", "-m", f"diary: day {td} edit")
+            if p is None:
+                return self._send("no such file", 400)
+            text = p.read_text()
+            head = text.split("---", 1)[0] + "---\n" if "---" in text else ""
+            p.write_text(head + body)
+            git("add", str(p.relative_to(ROOT)))
+            git("commit", "-q", "-m", f"edit: {p.relative_to(ROOT)}")
             code, _ = git("push", "-q", "origin", "main")
             extra = "" if code == 0 else " (committed locally)"
-            self._send(f"<p>saved day {td}{extra}</p>"
-                       "<p><a href='/'>back</a></p>")
+            self._send(f"<p>saved{extra}</p><p><a href='/'>back</a></p>")
             return
         if self.path == "/new-day" and (not n or "urlencoded" in ctype):
             files = entry_files()

@@ -77,7 +77,7 @@ def collect():
             d = days.setdefault(h["day"], {"entries": [], "essays": [],
                                            "uploads": []})
             kind = "essays" if p.parent.name == "essays" else "entries"
-            d[kind].append((p.stem, body))
+            d[kind].append((p.stem, body, p.relative_to(ROOT).as_posix()))
     man = ROOT / "uploads" / "manifest.json"
     if man.is_file():
         try:
@@ -96,19 +96,25 @@ def collect():
     return days, tensions
 
 
+def etitle(body):
+    m = re.search(r"^#\s+(.+)$", body, re.M)
+    return m.group(1).strip() if m else None
+
+
 def sidebar(days, link_uploads):
     s = ["<div id=nav>"]
     order = sorted(days, key=daykey)
     for i, day in enumerate(order):
         d = days[day]
         kids = []
-        for n, (stem, _b) in enumerate(d["entries"]):
-            kids.append(f"diary <a href=\"#d{day}-e{n}\">{stem}</a>")
-        for n, (stem, _b) in enumerate(d["essays"]):
-            kids.append(f"essay <a href=\"#d{day}-s{n}\">{stem}</a>")
+        for n, (_stem, _body, _rp) in enumerate(d["entries"]):
+            label = "notes" if len(d["entries"]) == 1 else f"notes {n + 1}"
+            kids.append(f"<a href=\"#d{day}-e{n}\">{label}</a>")
+        for n, (_stem, body, _rp) in enumerate(d["essays"]):
+            kids.append(f"<a href=\"#d{day}-s{n}\">"
+                        f"{etitle(body) or _stem}</a>")
         for r in d["uploads"]:
-            kids.append(f"{ukind(r['file'])} "
-                        f"<a href=\"{link_uploads(r['file'])}\">"
+            kids.append(f"<a href=\"{link_uploads(r['file'])}\">"
                         f"{r['file']}</a>")
         open_style = "" if i == len(order) - 1 else " style='display:none'"
         s.append(f"<button onclick=\"t('k{day}')\">{day}</button>"
@@ -122,9 +128,9 @@ def content(days):
     out = []
     for day in sorted(days, key=daykey):
         d = days[day]
-        for n, (_stem, body) in enumerate(d["entries"]):
+        for n, (_stem, body, _rp) in enumerate(d["entries"]):
             out.append(f"<span id=\"d{day}-e{n}\"></span>" + raw(body))
-        for n, (_stem, body) in enumerate(d["essays"]):
+        for n, (_stem, body, _rp) in enumerate(d["essays"]):
             out.append(f"<span id=\"d{day}-s{n}\"></span>" + raw(body))
     return "\n".join(out)
 
