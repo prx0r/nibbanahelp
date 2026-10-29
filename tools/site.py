@@ -117,13 +117,27 @@ document.addEventListener('click', function (e) {
   if (!el || el.dataset.open) return;
   el.dataset.open = '1';
   var raw = el.dataset.raw;
+  var cs = window.getComputedStyle(el);
   var ta = document.createElement('textarea');
-  ta.rows = Math.max(2, raw.split('\n').length + 1);
   ta.value = raw;
+  ta.style.display = 'block';
   ta.style.width = '100%';
   ta.style.boxSizing = 'border-box';
-  ta.style.fontFamily = 'monospace';
-  ta.style.fontSize = '1rem';
+  ta.style.margin = '0';
+  ta.style.padding = '0';
+  ta.style.border = '0';
+  ta.style.outline = 'none';
+  ta.style.background = 'transparent';
+  ta.style.resize = 'none';
+  ta.style.overflow = 'hidden';
+  ta.style.whiteSpace = 'pre-wrap';
+  ta.style.fontFamily = cs.fontFamily;
+  ta.style.fontSize = cs.fontSize;
+  ta.style.lineHeight = cs.lineHeight;
+  ta.style.fontStyle = cs.fontStyle;
+  ta.style.fontWeight = cs.fontWeight;
+  function fit() { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+  fit();
   var timer = null, dirty = false, lastOk = true, closed = false;
   function swapBack() {
     el.innerHTML = renderFor(el, el.dataset.raw);
@@ -137,12 +151,13 @@ document.addEventListener('click', function (e) {
       if (!r.ok) throw 0;
       el.dataset.raw = ta.value;
       lastOk = true;
-      ta.style.border = '';
+      ta.style.outline = 'none';
       if (closed) swapBack();
-    }).catch(function () { lastOk = false; ta.style.border = '1px solid red'; });
+    }).catch(function () { lastOk = false; ta.style.outline = '1px solid red'; });
   }
   ta.addEventListener('input', function () {
-    dirty = true; lastOk = true; ta.style.border = '';
+    dirty = true; lastOk = true; ta.style.outline = 'none';
+    fit();
     clearTimeout(timer);
     timer = setTimeout(function () { if (dirty) { dirty = false; save(); } }, 1200);
   });
