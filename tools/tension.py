@@ -45,7 +45,7 @@ def similar(qvec, items, mat, k=5, skip_id=None):
     q = np.array(qvec, dtype=np.float32)
     q = q / (np.linalg.norm(q) + 1e-9)
     scores = mat @ q
-    boost = {"own-tension": 1.35, "own-notes": 1.3, "own-chat": 1.25, "canon": 1.1}
+    boost = {"own-tension": 1.35}
     order = np.argsort(-scores)
     scored = sorted(((float(scores[int(i)]) * boost.get(items[int(i)].get("kind"), 1.0), float(scores[int(i)]), int(i)) for i in order), reverse=True)
     out = []

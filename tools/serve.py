@@ -224,8 +224,7 @@ class H(BaseHTTPRequestHandler):
                 _raw = (_mat @ _q).astype(float)
                 _rawmap = { _items[int(_i)]["id"]: float(_raw[int(_i)]) for _i in range(len(_items)) }
                 # own words first: diary, then past chats/notes, then others
-                _BOOST = {"own-tension": 1.35, "own-notes": 1.3, "own-chat": 1.25,
-                          "canon": 1.1}
+                _BOOST = {"own-tension": 1.35}
                 _sc = _raw.copy()
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)

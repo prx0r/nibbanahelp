@@ -133,7 +133,7 @@ async function matchPassages(env, query, k = 5) {
   if (!items.length) return [];
   const emb = await env.AI.run("@cf/baai/bge-m3", { text: [query] });
   const q = emb.data ? emb.data[0] : emb.result.data[0];
-  const BOOST = { "own-tension": 1.35, "own-notes": 1.3, "own-chat": 1.25, "canon": 1.1 };
+  const BOOST = { "own-tension": 1.35 };
   const raw = {};
   const scored = [];
   for (const item of items) {

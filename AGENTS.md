@@ -46,8 +46,9 @@ git, white page frontend, Cloudflare worker. Public by practice.
   Index is incremental (new ids only; model change forces a full rebuild).
 - Chat is retrieval-first: embed query → cosine top-20 → bge-reranker
   top-5 → relay with sources. Zero generated advice, always.
-  Own words first: own-tension ×1.35, own-notes ×1.3, own-chat ×1.25,
-  canon ×1.1 — same weights in serve, worker, tension.py.
+  Only own-tension gets a boost (×1.35, the anchor); all other kinds
+  score flat so the slot composer does the balancing — same weights
+  in serve, worker, tension.py.
 - Composition is tiered, gated on true relevance (raw cosine floor 0.28,
   0.22 for own-tension anchor): anchor own tension → up to 3 lived →
   1 lineage → 1 own-past. Empty tiers are skipped, never filled.
