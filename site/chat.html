@@ -46,15 +46,25 @@ document.getElementById('f').addEventListener('submit', function (e) {
     if (!r.ok) throw 0;
     return r.json();
   }).then(function (d) {
-    say('ai', d.reply);
-    transcript.push({ role: 'assistant', content: d.reply });
     (d.sources || []).forEach(function (s) {
       var p = document.createElement('p');
-      var a = document.createElement('a');
-      a.href = s.url; a.textContent = '→ ' + s.label;
-      a.target = '_blank'; a.rel = 'noopener';
-      p.appendChild(a); log.appendChild(p);
+      p.textContent = 'similar: ' + s.label;
+      log.appendChild(p);
+      if (s.excerpt) {
+        var q = document.createElement('p');
+        q.textContent = '“' + s.excerpt + '”' + (s.url ? ' — ' + s.url : '');
+        log.appendChild(q);
+      }
+      if (s.url && s.url.indexOf('http') === 0) {
+        var a = document.createElement('a');
+        a.href = s.url; a.textContent = '→ ' + s.label;
+        a.target = '_blank'; a.rel = 'noopener';
+        var w = document.createElement('p');
+        w.appendChild(a); log.appendChild(w);
+      }
     });
+    say('ai', d.reply);
+    transcript.push({ role: 'assistant', content: d.reply });
     window.scrollTo(0, document.body.scrollHeight);
   }).catch(function () { say('ai', '[offline mirror — connect to talk]'); });
 });

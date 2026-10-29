@@ -23,7 +23,9 @@ const SYSTEM =
   "factors, not just roots — restlessness? doubt? view? conceit? worry? " +
   "aversion? Name the citta-class (e.g. doubt-rooted, worry-laden) rather " +
   "than labelling whole life situations; a debt is not greed, a doubting " +
-  "mind-moment is delusion.";
+  "mind-moment is delusion. Lead with what you relayed — quoted passages " +
+  "with sources first, your own words minimal and interrogative. You are " +
+  "a finder, not a teacher.";
 
 function page(title, inner) {
   return new Response(
@@ -220,7 +222,7 @@ export default {
         return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
       }
       await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: query, assistant: reply, relayed: relay.map((m) => m.id) }));
-      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url })) }), { headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280) })) }), { headers: { "content-type": "application/json" } });
     }
 
     if (url.pathname === "/save" && req.method === "POST") {

@@ -58,6 +58,15 @@ for (const f of readdirSync(join(root, "tensions"))) {
   const body = (text.split("---")[1] || "").trim().slice(0, 400);
   context += `- ${get("id")} [${get("status")}] roots=${get("roots")} :: ${get("summary")}\n  ${body}\n`;
 }
+context += "\nDIARY (verbatim, newest last):\n";
+for (const sub of ["entries", "essays"]) {
+  for (const f of readdirSync(join(root, sub))) {
+    if (!f.endsWith(".md") || f.startsWith("_")) continue;
+    const text = readFileSync(join(root, sub, f), "utf8");
+    const body = (text.split("---")[1] || text).trim().slice(0, 600);
+    context += `--- ${sub}/${f} ---\n${body}\n`;
+  }
+}
 context += "\nROOTS:\n";
 for (const f of ["greed-lobha.md", "hatred-dosa.md", "delusion-moha.md", "abhidhamma.md"]) {
   try {

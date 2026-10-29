@@ -276,7 +276,11 @@ class H(BaseHTTPRequestHandler):
             git("add", f"sessions/{fn}")
             git("commit", "-q", "-m", f"chat: {fn}")
             git("push", "-q", "origin", "main")
-            self._send(_json.dumps({"reply": reply, "sources": sources}),
+            self._send(_json.dumps({"reply": reply,
+                                    "sources": [{"label": r["label"],
+                                                 "url": r["url"],
+                                                 "excerpt": r["text"][:280]}
+                                                for r in relay]}),
                        200, "application/json")
             return
         if self.path == "/save" and n and "urlencoded" in ctype:
