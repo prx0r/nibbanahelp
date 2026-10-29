@@ -8,3 +8,7 @@ bucket_name = "nibbanahelp-live"
 
 [ai]
 binding = "AI"
+
+[[routes]]
+pattern = "nibbana.stonedoorway.com"
+custom_domain = true
