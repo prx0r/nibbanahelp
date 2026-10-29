@@ -215,9 +215,10 @@ def header(p: Path) -> dict:
         m = re.search(rf"^{k}:\s*(.+)$", head, re.M)
         if m:
             out[k] = m.group(1).strip()
-    m = re.search(r"^roots:\s*\[(.+?)\]\s*$", head, re.M)
-    if m:
-        out["roots"] = [x.strip() for x in m.group(1).split(",")]
+    for key in ("roots", "factors", "factors_growing"):
+        m = re.search(rf"^{key}:\s*\[(.+?)\]\s*$", head, re.M)
+        if m:
+            out[key] = [x.strip() for x in m.group(1).split(",") if x.strip()]
     body = text.split("---", 1)[1] if "---" in text else text
     return out, body.strip()
 
@@ -273,6 +274,8 @@ def collect():
                              "summary": h.get("summary", ""),
                              "status": h.get("status"),
                              "roots": h.get("roots", []),
+                             "factors": h.get("factors", []),
+                             "factors_growing": h.get("factors_growing", []),
                              "body": body})
     return days, tensions
 
@@ -346,7 +349,7 @@ def build_vis(days, tensions):
             if r in w:
                 w[r] += wt
     xs = {"lobha": 150, "dosa": 400, "moha": 650}
-    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420"'
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560"'
              ' style="max-width:100%;height:auto" font-family="monospace">']
     parts.append("<text x=\"400\" y=\"24\" text-anchor=\"middle\" "
                  "font-size=\"14\">afflictions, live</text>")
@@ -385,6 +388,41 @@ def build_vis(days, tensions):
         sub = t["status"] + (f" · {chats.get(t['id'], 0)} chats" if chats.get(t["id"]) else "")
         parts.append(f"<text x=\"{x}\" y=\"{y + 38}\" text-anchor=\"middle\" "
                      f"font-size=\"9\">{html.escape(sub)}</text>")
+        fac = ", ".join(t.get("factors", []))
+        if fac:
+            parts.append(f"<text x=\"{x}\" y=\"{y + 50}\" text-anchor=\"middle\" "
+                         f"font-size=\"8\">{html.escape(fac[:44])}</text>")
+            if len(fac) > 44:
+                parts.append(f"<text x=\"{x}\" y=\"{y + 60}\" text-anchor=\"middle\" "
+                             f"font-size=\"8\">{html.escape(fac[44:88])}</text>")
+    # decode strip: the 14 unwholesome, lit where present across live tensions
+    ALL14 = [("moha", "moha"), ("ahirika", "ahir"), ("anottappa", "anot"),
+             ("uddhacca", "uddh"), ("lobha", "lobha"), ("diṭṭhi", "ditthi"),
+             ("māna", "mana"), ("dosa", "dosa"), ("issā", "issa"),
+             ("macchariya", "macch"), ("kukkucca", "kukk"),
+             ("thīna", "thina"), ("middha", "midd"), ("vicikicchā", "vici")]
+    counts, grow = {}, {}
+    for t in tensions:
+        for f in t.get("factors", []):
+            counts[f] = counts.get(f, 0) + 1
+        for f in t.get("factors_growing", []):
+            grow[f] = grow.get(f, 0) + 1
+    parts.append("<text x=\"400\" y=\"430\" text-anchor=\"middle\" "
+                 "font-size=\"11\">the 14 unwholesome — lit where present "
+                 "(decode, roots/cetasikas-decode.md)</text>")
+    for i, (fac, ab) in enumerate(ALL14):
+        cx = 20 + (i % 7) * 110
+        cy = 448 + (i // 7) * 44
+        n = counts.get(fac, 0)
+        parts.append(f"<rect x=\"{cx}\" y=\"{cy}\" width=\"100\" height=\"26\" "
+                     f"fill=\"{'black' if n else 'white'}\" stroke=\"black\"/>")
+        parts.append(f"<text x=\"{cx + 50}\" y=\"{cy + 16}\" "
+                     f"text-anchor=\"middle\" font-size=\"10\" "
+                     f"fill=\"{'white' if n else 'black'}\">"
+                     f"{html.escape(ab)} ×{n}</text>")
+    gl = ", ".join(f"{k}×{v}" for k, v in sorted(grow.items()))
+    parts.append(f"<text x=\"400\" y=\"548\" text-anchor=\"middle\" "
+                 f"font-size=\"9\">growing: {html.escape(gl or '—')}</text>")
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -445,6 +483,29 @@ document.getElementById('f').addEventListener('submit', function (e) {
         var q = document.createElement('p');
         q.textContent = '\u201c' + s.excerpt + '\u201d' + (s.url ? ' — ' + s.url : '');
         log.appendChild(q);
+      }
+      if (s.youtube && /^[A-Za-z0-9_-]{6,}$/.test(s.youtube)) {
+        var start = s.start || 0;
+        var mm = Math.floor(start / 60), ss = ('0' + (start % 60)).slice(-2);
+        var wbtn = document.createElement('button');
+        wbtn.textContent = '\u25b6 watch from ' + mm + ':' + ss;
+        wbtn.style.cssText = 'background:#000;color:#fff;border:0;padding:.3rem .8rem;font-size:.85rem;cursor:pointer;margin:.2rem 0';
+        var wp = document.createElement('p');
+        wp.appendChild(wbtn);
+        log.appendChild(wp);
+        wbtn.addEventListener('click', function () {
+          if (window.__vid) window.__vid.remove();
+          var holder = document.createElement('div');
+          var f = document.createElement('iframe');
+          f.width = '100%'; f.height = '220'; f.allowFullscreen = true;
+          f.src = 'https://www.youtube-nocookie.com/embed/' + s.youtube +
+                  '?start=' + start + '&rel=0';
+          holder.appendChild(f);
+          wp.appendChild(holder);
+          window.__vid = holder;
+          wbtn.remove();
+        });
+        return;
       }
       if (s.url && s.url.indexOf('http') === 0) {
         var a = document.createElement('a');

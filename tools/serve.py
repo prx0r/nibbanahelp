@@ -292,6 +292,50 @@ class H(BaseHTTPRequestHandler):
                             "excerpt": r["text"][:280]} for r in relay]
             except Exception as e:
                 print("relay unavailable:", str(e)[:200])
+            # video tier: satsang clip moments (YouTube id @ second), fail-open
+            try:
+                from urllib.request import Request as _Req, urlopen as _ul
+                _stop = {"the", "and", "for", "that", "this", "with", "have",
+                         "you", "are", "not", "but", "can", "its", "was",
+                         "one", "more", "just", "like", "what", "when",
+                         "your", "about", "how", "deal", "going", "keep",
+                         "really", "want", "feel", "feeling"}
+                _kw = [w for w in re.findall(r"[a-z']{4,}",
+                                             clean[-1]["content"].lower())
+                       if w not in _stop]
+                _plans = ([_kw[:3]] if len(_kw) >= 3 else []) + [
+                    [w] for w in _kw[:4]]
+                _hits = []
+                for _plan in _plans:
+                    if not _plan or _hits:
+                        continue
+                    _req = _Req(
+                        "https://mcp.tantrafiles.xyz/api/search?q=" +
+                        quote(" ".join(_plan)) + "&kinds=clip&limit=4",
+                        headers={"User-Agent": "Mozilla/5.0 (Linux; Android 10) "
+                                 "AppleWebKit/537.36 Chrome/120 Mobile "
+                                 "Safari/537.36"})
+                    with _ul(_req, timeout=10) as _r:
+                        _hits = _json.load(_r).get("results", [])[:2]
+                for _res in _hits:
+                    _m = re.match(r"clip/([A-Za-z0-9_-]{6,})(?:@(\d+))?",
+                                  _res.get("id", ""))
+                    if not _m:
+                        continue
+                    _v = {"id": _res.get("id", ""), "kind": "video",
+                          "label": _res.get("title", "")[:90],
+                          "url": _res.get("url") or "",
+                          "text": _res.get("title", ""),
+                          "youtube": _m.group(1),
+                          "start": int(_m.group(2) or 0)}
+                    relay.append(_v)
+                    sources.append({"label": _v["label"],
+                                    "url": _v["url"],
+                                    "excerpt": _v["text"][:280],
+                                    "youtube": _v["youtube"],
+                                    "start": _v["start"]})
+            except Exception as e:
+                print("satsang video tier unavailable:", str(e)[:150])
             try:
                 from ai import chat as _aichat, CHAT_SYSTEM
                 rb = ("\n\nSIMILAR LIVED PASSAGES (relay these with their "

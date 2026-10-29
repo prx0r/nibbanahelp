@@ -5,6 +5,8 @@ opened: 2026-10-28
 status: open
 domain: identity
 roots: [dosa, moha]
+factors: [dosa, māna, moha]
+factors_growing: [adosa, amoha, saddhā]
 summary: bisexual but not openly, unconscious energy spent armouring against shame
 ---
 

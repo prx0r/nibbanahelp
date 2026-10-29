@@ -55,6 +55,29 @@ document.getElementById('f').addEventListener('submit', function (e) {
         q.textContent = '“' + s.excerpt + '”' + (s.url ? ' — ' + s.url : '');
         log.appendChild(q);
       }
+      if (s.youtube && /^[A-Za-z0-9_-]{6,}$/.test(s.youtube)) {
+        var start = s.start || 0;
+        var mm = Math.floor(start / 60), ss = ('0' + (start % 60)).slice(-2);
+        var wbtn = document.createElement('button');
+        wbtn.textContent = '▶ watch from ' + mm + ':' + ss;
+        wbtn.style.cssText = 'background:#000;color:#fff;border:0;padding:.3rem .8rem;font-size:.85rem;cursor:pointer;margin:.2rem 0';
+        var wp = document.createElement('p');
+        wp.appendChild(wbtn);
+        log.appendChild(wp);
+        wbtn.addEventListener('click', function () {
+          if (window.__vid) window.__vid.remove();
+          var holder = document.createElement('div');
+          var f = document.createElement('iframe');
+          f.width = '100%'; f.height = '220'; f.allowFullscreen = true;
+          f.src = 'https://www.youtube-nocookie.com/embed/' + s.youtube +
+                  '?start=' + start + '&rel=0';
+          holder.appendChild(f);
+          wp.appendChild(holder);
+          window.__vid = holder;
+          wbtn.remove();
+        });
+        return;
+      }
       if (s.url && s.url.indexOf('http') === 0) {
         var a = document.createElement('a');
         a.href = s.url; a.textContent = '→ ' + s.label;

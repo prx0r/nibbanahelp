@@ -253,6 +253,35 @@ export default {
       try {
         relay = await matchPassages(env, query, 5);
       } catch (e) { /* chat still works without relay */ }
+      // video tier: satsang clip moments (YouTube id @ second), fail-open.
+      // search is keyword-title based: try a short phrase, then single words.
+      try {
+        const stop = new Set(["the","and","for","that","this","with","have",
+          "you","are","not","but","can","its","was","one","more","just",
+          "like","what","when","your","about","how","deal","going","keep",
+          "really","want","feel","feeling"]);
+        const kw = (query.toLowerCase().match(/[a-z']{4,}/g) || [])
+          .filter((w) => !stop.has(w));
+        const plans = [];
+        if (kw.length >= 3) plans.push(kw.slice(0, 3).join(" "));
+        kw.slice(0, 4).forEach((w) => plans.push(w));
+        let hits = [];
+        for (const p of plans) {
+          if (hits.length) break;
+          const sv = await fetch("https://mcp.tantrafiles.xyz/api/search?q=" +
+            encodeURIComponent(p) + "&kinds=clip&limit=4",
+            { signal: AbortSignal.timeout(10000) });
+          if (sv.ok) hits = ((await sv.json()).results || []).slice(0, 2);
+        }
+        for (const r of hits) {
+          const m = /^clip\/([A-Za-z0-9_-]{6,})(?:@(\d+))?/.exec(r.id || "");
+          if (!m) continue;
+          relay.push({ id: r.id, kind: "video", label: (r.title || r.id).slice(0, 90),
+                       url: r.url || ("https://tantrafiles.xyz/" + r.id),
+                       text: r.title || "", youtube: m[1],
+                       start: parseInt(m[2] || "0", 10) });
+        }
+      } catch (e) { /* fail open */ }
       const relayBlock = relay.length
         ? "\n\nSIMILAR LIVED PASSAGES (relay these with their sources, never invent advice):\n" +
           relay.map((m) => `- [${m.kind}] ${m.label} :: ${m.url}\n  ${m.text.slice(0, 600)}`).join("\n")
@@ -280,7 +309,7 @@ export default {
         return new Response(JSON.stringify({ error: "ai unavailable" }), { status: 502, headers: { "content-type": "application/json" } });
       }
       await env.BRAIN.put(`pending/chat/${sid}/${Date.now()}.json`, JSON.stringify({ sid, at: new Date().toISOString(), user: query, assistant: reply, relayed: relay.map((m) => m.id) }));
-      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280) })) }), { headers: { "content-type": "application/json" } });
+      return new Response(JSON.stringify({ reply, sources: relay.map((m) => ({ label: m.label, url: m.url, excerpt: (m.text || "").slice(0, 280), youtube: m.youtube || null, start: m.start || 0 })) }), { headers: { "content-type": "application/json" } });
     }
 
     if (url.pathname === "/save" && req.method === "POST") {

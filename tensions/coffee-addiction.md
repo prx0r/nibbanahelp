@@ -5,6 +5,8 @@ opened: 2026-10-28
 status: loosening
 domain: addiction
 roots: [lobha, moha]
+factors: [lobha, diṭṭhi, moha, uddhacca]
+factors_growing: [alobha, amoha]
 summary: addicted to coffee, planning one final goodbye cup + switch to tea
 ---
 
