@@ -207,6 +207,23 @@ def collect():
                               "url": "",
                               "themes": ["Trika", "Kashmir Shaivism"],
                               "text": ch[:2000]})
+    # 4e. own diary entries + essays (owner prose -> ownpast tier; red-team F1)
+    for pat in ("entries/*.md", "essays/*.md"):
+        for p in sorted(ROOT.glob(pat)):
+            if p.name.startswith("_") or p.name == "README.md":
+                continue
+            raw = p.read_text(encoding="utf-8", errors="ignore")
+            body = raw.split("---", 1)[1] if raw.startswith(("day:", "day ")) or "---" in raw[:200] else raw
+            body = body.strip()
+            if len(body) < 40:
+                continue
+            for chi, ch in enumerate(chunk_text(body)):
+                items.append({"id": f"diary:{p.parent.name}:{p.stem}:{chi}",
+                              "kind": "own-diary",
+                              "label": f"own {p.parent.name}/{p.stem}",
+                              "url": f"{p.parent.name}/{p.name}",
+                              "themes": [],
+                              "text": ch[:2000]})
     # 5. own bank: tomnotes diaries, essays, prior chats (your words first)
     from ingest_hxrmxs import collect_hxrmxs
     for it in collect_hxrmxs():
