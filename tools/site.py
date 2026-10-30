@@ -328,7 +328,8 @@ def collect():
 
 def sidebar(days, link_uploads):
     s = ["<div id=nav>",
-         "<a href=\"/chat\">chat</a><br><a href=\"/vis\">vis</a><br><br>"]
+         "<a href=\"/chat\">chat</a><br><a href=\"/vis\">vis</a><br>"
+         "<a href=\"https://body.stonedoorway.com/lab\" style=\"text-decoration:underline\">body</a><br><br>"]
     order = sorted(days, key=daykey)
     for i, day in enumerate(order):
         d = days[day]
@@ -496,7 +497,7 @@ CHAT_PAGE = """<!doctype html>
 </style>
 </head>
 <body>
-<p><a href="/">diary</a> · <a href="/vis">vis</a></p>
+<p><a href="/">diary</a> · <a href="/vis">vis</a> · <a href="https://body.stonedoorway.com/lab" style="text-decoration:underline">body</a></p>
 <div id=log></div>
 <form id=f><input id=q autocomplete=off placeholder="what is on your mind?"><button>send</button></form>
 <script>
@@ -601,7 +602,8 @@ def main():
         "body{background:#fff;color:#000;font-family:monospace;"
         "margin:0 auto;padding:0 1rem;max-width:60rem;text-align:center}"
         "a{color:#000}svg{display:inline-block}</style></head><body>"
-        "<p><a href='/'>diary</a> · <a href='/chat'>chat</a></p>"
+        "<p><a href='/'>diary</a> · <a href='/chat'>chat</a> · "
+        "<a href='https://body.stonedoorway.com/lab' style='text-decoration:underline'>body</a></p>"
         + vis_body + "</body></html>")
     print("wrote site/vis.html")
 
