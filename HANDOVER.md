@@ -123,6 +123,14 @@ watch queue: tools/me.py + tools/watch_queue.py → satsang REST (tantrafiles.xy
 - Deployed worker includes `relayErr` in chat JSON (debug echo — keep or
   remove at leisure).
 
+- **Trika relay (2026-10-30):** kind `trika` in the LINEAGE tier (BOOST 1.2,
+  lineage slots now 2 → one Buddhist + one Trika can share an answer). 104
+  chunks from `trika/passages/` (fetched from /root/deitybody by
+  `tools/fetch_trika.py`). Refresh: fetch → build_index → upload
+  corpus/{index,vectors}.json → R2 `relay/`. Design/provenance/vis-next:
+  `trika/README.md`. E2E: mantra-body query → [Trika: pathway] +
+  [Trika: ta_extra_hits] top sources, reply relayed TĀ 15 nyāsa.
+
 ## Next-up queue (owner's words, priority order)
 
 1. Play with it — real usage is the next data. Fix what annoys.
