@@ -94,7 +94,43 @@ defuse F4-ish junk sources. Open next: replace the .12 rerank GATE with pure ord
 (rerank as ranker, cosine floor as the gate), anchor floor .45, floor .40 for
 non-own kinds.
 
-## Remediation applied same session
+## Remediation applied — the gate rewrite (rounds 3–4, same day)
+
+Implemented from the measured numbers, in the order the failures exposed the next layer:
+
+1. **Dead rerank gate removed** (`rrs < 0.12` dropped both sides) — rerank now
+   orders, never filters. Floors became the gate: anchor .45 / lived .45 /
+   ownpast .35 / shared .40.
+2. **Videos gated**: only enrich when real passages matched (empty relay → no videos).
+3. **Return cap** 5 → 7, relay break 6 → 7, total sources capped at 7 (videos
+   take the leftover room).
+4. **Context rule sharpened** in both SYSTEM prompts + worker Context header:
+   background is vocabulary, never a quoteable source (killed the
+   "delusion-moha.md" citation with zero sources).
+5. **Per-kind quota pool** — the 575-dialogue hxrmxs corpus flooded the top-30
+   and squeezed lived/canon/trika out before floors saw them; pool = top-30 +
+   top-4 lived + top-3 canon + top-4 trika (floor-passing only), pool cap 40
+   (the old `slice(0,30)` was truncating the quota — caught in round 3).
+6. **Graph stage gated on a floor-passing tension anchor** — forced-raw-0.5 graph
+   entries were laundering pool-failed junk (rt07: debt-in-pool → roots →
+   abhidhamma/shame passages with a reply that cited none of them).
+
+### Final state (round 4, live)
+
+| case | sources | verdict |
+|------|---------|---------|
+| rt03 similar-people | 7 incl. **DhO: Eric's Practice Log** + canon + anchor + diary | F5 CLOSED |
+| rt05 practice-phenomenology | 7: **Trika ×2 first**, lived ×2, diary; reply relays TĀ 15 | F2 CLOSED |
+| rt07 off-topic pizza | **0**, reply honest + lobha question | F4 CLOSED (graph + videos + floors all quiet) |
+| rt06 mixed lens | Trika ×2 + lived ×3 + Buddhist dialogue, reply quotes Kaccana | intact |
+| rt04 vimarśa | Trika ×2, no tension hijack | F3 CLOSED |
+| rt09 diary | own entries/day-02 relayed verbatim | F1 stays closed |
+
+Known cosmetic: relay excerpt slices can cut mid-word in a quote (Upton
+"perience…"), and sources≠reply overlap remains by design (the model judges
+coverage; the list shows what cleared floors) — both accepted for now.
+
+
 
 **F1 FIXED** (entries/ + essays/ → kind `own-diary`, ownpast tier, BOOST 1.35 —
 11 chunks embedded, relay uploaded, worker redeployed). Validation re-probe rt09:

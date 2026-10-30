@@ -37,11 +37,11 @@ const SYSTEM =
   "Lead with what you relayed — quoted passages with sources first, " +
   "your own words minimal and interrogative. You are " +
   "a finder, not a teacher. Copy source labels character-for-character " +
-  "from the relay block; never invent or reword a source. Never quote " +
-  "Quote ONLY from " +
-  "the relay block's listed passages (canon included); the background " +
-  "context is vocabulary, never an answer. If no relayed passage is " +
-  "relevant, say so plainly and ask your one question.";
+  "from the relay block; never invent or reword a source. Quote ONLY " +
+  "passages listed in the relay block — the background context is " +
+  "vocabulary for matching, never quote, cite, or name files from it. " +
+  "If the relay block is empty or nothing in it is relevant, say so " +
+  "plainly and ask your one question.";
 
 function page(title, inner) {
   return new Response(
@@ -159,11 +159,32 @@ async function matchPassages(env, query, k = 5) {
     scored.push([s * (BOOST[item.kind] || 1), item]);
   }
   scored.sort((a, b) => b[0] - a[0]);
-  let cands = scored.slice(0, 30).map(([, item]) => item)
+  // candidate pool: global top-30 PLUS per-kind quotas — the hxrmxs dialogue
+  // corpus floods the top-30 on any spiritually-flavored query, squeezing out
+  // lived/canon/trika before floors ever see them (red-team rt03, round 3).
+  const top = scored.slice(0, 30).map(([, item]) => item);
+  const inPool = new Set(top.map((i) => i.id));
+  const quota = (kind, n, floorQ) => {
+    for (const [s, item] of scored) {
+      if (n <= 0) break;
+      if (item.kind !== kind || inPool.has(item.id) || s < floorQ) continue;
+      top.push(item); inPool.add(item.id); n--;
+    }
+  };
+  quota("lived-log", 4, 0.45);
+  quota("canon", 3, 0.40);
+  quota("trika", 4, 0.40);
+  let cands = top
     .filter((item) => !(item.kind === "own-chat" &&
       (item.text || "").slice(0, 300).includes(query.slice(0, 120))));
   // graph stage: roots of matched tensions -> concept-constrained passages
   try {
+    // concept-graph only if an own-tension actually cleared the anchor floor —
+    // otherwise the forced-raw-0.5 graph entries launder floor-failed junk
+    // (red-team rt07: debt in pool -> roots -> abhidhamma/shame passages).
+    const anchored = cands.some((c) =>
+      c.kind === "own-tension" && (raw[c.id] || 0) >= 0.45);
+    if (!anchored) throw new Error("no floor-passing tension anchor");
     const roots = new Set();
     for (const c of cands) {
       let tid = null;
@@ -185,7 +206,7 @@ async function matchPassages(env, query, k = 5) {
       }
     }
   } catch (e) { /* graph stage optional */ }
-  cands = cands.slice(0, 30);
+  cands = cands.slice(0, 40);  // was 30 — truncated the quota pool (lived/canon/trika at 31+)
   let ranked = cands.map((item) => [0, 1, item]);
   try {
     let pairs = [];
@@ -224,16 +245,22 @@ async function matchPassages(env, query, k = 5) {
   for (const [rrs, pri, c] of ranked) {
     const t = tierOf(c);
     if (!(slots[t] > 0)) continue;
-    const floor = t === "anchor" ? 0.22 : 0.28;
+    // floors set from red-team measurements (research/redteam-chat-2026-10-30,
+    // round 2 with the live 2-view query): legit anchors .72-.84 vs hijacks
+    // .41-.43 -> .45; off-topic junk tops .38-.406 -> shared tiers .40;
+    // lived leaks to .406 on garbage vs .477 legitimate -> lived .45;
+    // own words are never junk -> ownpast .35.
+    const floor = t === "anchor" ? 0.45
+                : (c.kind === "lived-log" ? 0.45
+                : (t === "ownpast" ? 0.35 : 0.40));
     if ((raw[c.id] || 0) < floor && !(c.kind === "graph")) continue;
     const curated = String(c.id || "").startsWith("curated:") && (raw[c.id] || 0) >= 0.5;
-    if (rrs < 0.12 && t !== "anchor" && !(c.kind === "graph") && !curated) continue;
     const key = stemKey(c.id);
     if (seen.has(key)) continue;
     seen.add(key);
     slots[t] -= 1;
     out.push(c);
-    if (out.length >= 6) break;
+    if (out.length >= 7) break;
   }
   const TIER = { "canon": 0, "lineage": 1, "roots-doc": 1, "graph": 1, "anchor": 2,
                  "ownpast": 3, "lived": 4, "dialogue": 5 };
@@ -283,11 +310,13 @@ export default {
       let relay = [];
       let relayErr = "";
       try {
-        relay = await matchPassages(env, query, 5);
+        relay = await matchPassages(env, query, 7);
       } catch (e) { relayErr = String(e && e.message || e); }
       // video tier: satsang clip moments (YouTube id @ second), fail-open.
       // search is keyword-title based: try a short phrase, then single words.
+      // only enrich when real passages matched — never pad an empty relay (F4).
       try {
+        if (!relay.length) throw new Error("no passages matched");
         const stop = new Set(["the","and","for","that","this","with","have",
           "you","are","not","but","can","its","was","one","more","just",
           "like","what","when","your","about","how","deal","going","keep",
@@ -305,7 +334,7 @@ export default {
             { signal: AbortSignal.timeout(10000) });
           if (sv.ok) hits = ((await sv.json()).results || []).slice(0, 2);
         }
-        for (const r of hits) {
+        for (const r of hits.slice(0, Math.max(0, 7 - relay.length))) {
           const m = /^clip\/([A-Za-z0-9_-]{6,})(?:@(\d+))?/.exec(r.id || "");
           if (!m) continue;
           relay.push({ id: r.id, kind: "video", label: (r.title || r.id).slice(0, 90),
@@ -318,7 +347,7 @@ export default {
         ? "\n\nSIMILAR LIVED PASSAGES (relay these with their sources, never invent advice):\n" +
           relay.map((m) => `- [${m.kind}] ${m.label} :: ${m.url}\n  ${m.text.slice(0, 600)}`).join("\n")
         : "";
-      const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots):\n" + CONTEXT + relayBlock }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
+      const messages = [{ role: "system", content: SYSTEM + "\n\nContext (live tensions + roots — BACKGROUND VOCABULARY ONLY, NEVER A SOURCE):\n" + CONTEXT + relayBlock }, ...clean.map((m) => ({ role: m.role, content: m.content.slice(0, 2000) }))];
       const readReply = (out) => {
         if (!out) return "";
         if (typeof out.response === "string" && out.response.trim()) return out.response;

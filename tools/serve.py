@@ -243,10 +243,29 @@ class H(BaseHTTPRequestHandler):
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
                 _order = _np.argsort(-_sc)[:30]
-                _cands = [_items[int(i)] for i in _order
-                          if not (_items[int(i)].get("kind") == "own-chat"
-                                  and clean[-1]["content"][:120] in
-                                  (_items[int(i)].get("text") or "")[:300])]
+                # quota pool (red-team rt03 round 3): the hxrmxs dialogue corpus
+                # floods the top-30 — guarantee lived/canon/trika representation
+                _top = [_items[int(i)] for i in _order
+                        if not (_items[int(i)].get("kind") == "own-chat"
+                                and clean[-1]["content"][:120] in
+                                (_items[int(i)].get("text") or "")[:300])]
+                _have = {i.get("id") for i in _top}
+                _srt = _np.argsort(-_sc)
+                for _kind, _n, _fl in (("lived-log", 4, 0.45),
+                                       ("canon", 3, 0.40),
+                                       ("trika", 4, 0.40)):
+                    for _ix in _srt:
+                        if _n <= 0:
+                            break
+                        _it = _items[int(_ix)]
+                        if (_it.get("kind") != _kind
+                                or _it.get("id") in _have
+                                or float(_sc[int(_ix)]) < _fl):
+                            continue
+                        _top.append(_it)
+                        _have.add(_it.get("id"))
+                        _n -= 1
+                _cands = _top
                 # graph stage: roots of any matched tensions -> dharma-tech concept retrieval
                 try:
                     sys.path.insert(0, str(ROOT / "tools"))
@@ -254,9 +273,11 @@ class H(BaseHTTPRequestHandler):
                     _tids = set()
                     for _c in _cands:
                         _cid = _c.get("id", "")
-                        if _cid.startswith("tension:"):
+                        if _cid.startswith("tension:") and \
+                                _rawmap.get(_cid, 0) >= 0.45:
                             _tids.add(_cid.split(":", 1)[1])
-                        elif _c.get("url", "").startswith("tensions/"):
+                        elif (_c.get("url", "").startswith("tensions/")
+                              and _rawmap.get(_cid, 0) >= 0.45):
                             _tids.add(Path(_c["url"]).stem)
                     _groots = set()
                     for _tp in (ROOT / "tensions").glob("*.md"):
@@ -311,20 +332,21 @@ class H(BaseHTTPRequestHandler):
                     _t = _tier(_c)
                     if _slots.get(_t, 0) <= 0:
                         continue
-                    _floor = 0.22 if _t == "anchor" else 0.28
+                    # red-team floors: anchor .45 / lived .45 / ownpast .35 / shared .40
+                    _floor = (0.45 if _t == "anchor"
+                              else (0.45 if _c.get("kind") == "lived-log"
+                              else (0.35 if _t == "ownpast" else 0.40)))
                     if _rawmap.get(_c["id"], 0) < _floor:
                         continue
                     _curated = (str(_c.get("id", "")).startswith("curated:")
                                 and _rawmap.get(_c["id"], 0) >= 0.5)
-                    if _rrs < 0.12 and _t != "anchor" and not _curated:
-                        continue
                     _key = _c["id"].split(":")[-1].replace("tension-", "")
                     if _key in _seen:
                         continue
                     _seen.add(_key)
                     _slots[_t] -= 1
                     relay.append(_c)
-                    if len(relay) >= 6:
+                    if len(relay) >= 7:
                         break
                 _TIER_ORDER = {"canon": 0, "lineage": 1, "roots-doc": 1,
                                "graph": 1, "anchor": 2, "ownpast": 3,
@@ -334,8 +356,11 @@ class H(BaseHTTPRequestHandler):
                             "excerpt": r["text"][:280]} for r in relay]
             except Exception as e:
                 print("relay unavailable:", str(e)[:200])
-            # video tier: satsang clip moments (YouTube id @ second), fail-open
+            # video tier: satsang clip moments (YouTube id @ second), fail-open.
+            # only when real passages matched — never pad an empty relay (F4)
             try:
+                if not relay:
+                    raise RuntimeError("no passages matched")
                 from urllib.request import Request as _Req, urlopen as _ul
                 _stop = {"the", "and", "for", "that", "this", "with", "have",
                          "you", "are", "not", "but", "can", "its", "was",
@@ -358,7 +383,8 @@ class H(BaseHTTPRequestHandler):
                                  "AppleWebKit/537.36 Chrome/120 Mobile "
                                  "Safari/537.36"})
                     with _ul(_req, timeout=10) as _r:
-                        _hits = _json.load(_r).get("results", [])[:2]
+                        _hits = _json.load(_r).get("results", [])[
+                            :max(0, 7 - len(relay))]
                 for _res in _hits:
                     _m = re.match(r"clip/([A-Za-z0-9_-]{6,})(?:@(\d+))?",
                                   _res.get("id", ""))
