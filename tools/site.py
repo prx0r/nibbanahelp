@@ -75,16 +75,18 @@ JS = r"""
 function up(day){
   var i=document.createElement('input');
   i.type='file';
+  i.style.display='none';
+  document.body.appendChild(i);
   i.onchange=function(){
-    if(!this.files.length)return;
+    if(!this.files.length){i.remove();return;}
     var f=this.files[0];
-    var isText=/\.(md|txt)$/i.test(f.name);
+    i.remove();
     var box=document.createElement('div');
     var lab=document.createElement('p');
-    lab.textContent=f.name+(isText?' — pick a kind:':'');
+    lab.textContent=f.name+' — pick a kind:';
     box.appendChild(lab);
     var sel=null;
-    if(isText){
+    {
       sel=document.createElement('select');
       ['diary','essay','poem'].forEach(function(k){
         var o=document.createElement('option');o.value=k;o.textContent=k;
@@ -115,6 +117,7 @@ function up(day){
     };
     document.getElementById('nav').appendChild(box);
   };
+  i.oncancel=function(){ i.remove(); };
   i.click();
 }
 
@@ -341,13 +344,19 @@ def sidebar(days, link_uploads):
                         f"{ek or 'essay'}</a>")
         for r in d["uploads"]:
             kind = r.get("kind") or ukind(r["file"])
-            kids.append(f"{kind} "
-                        f"<a href=\"{link_uploads(r['file'])}\">"
-                        f"{r['file']}</a>")
+            if kind == "diary":
+                continue  # diary content surfaces as the day's entry link
+            kids.append(f"<a href=\"{link_uploads(r['file'])}\">{kind}</a>")
         s.append(f"<button class=daybox onclick=\"t('k{day}')\">{day}</button>"
                  f"<div id=\"k{day}\">"
                  + "<br>".join(kids) + "</div>"
                  + f"<p><a href=\"#\" onclick=\"up({day});return false\">+</a></p>")
+    # always offer the newest day as an empty upload slot
+    numeric = [int(x) for x in order if str(x).isdigit()]
+    nxt = (max(numeric) + 1) if numeric else 1
+    s.append(f"<button class=daybox onclick=\"t('k{nxt}')\">{nxt}</button>"
+             f"<div id=\"k{nxt}\"></div>"
+             f"<p><a href=\"#\" onclick=\"up({nxt});return false\">+</a></p>")
     s.append("</div>")
     return "\n".join(s)
 

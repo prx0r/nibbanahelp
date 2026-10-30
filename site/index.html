@@ -30,14 +30,14 @@
     font-size: 1rem; }
 </style>
 </head>
-<body data-today="3">
+<body data-today="2">
 <div class="motto-blk" data-f="motto.txt" data-kind="motto" data-raw="with each and every breath i create the conditions for liberation
 the only delusion is that nibbana cannot be attained in this very moment"><div class=motto-line><p class=motto style="color:#555">"with each and every breath i create the conditions for liberation"</p></div>
 <div class=motto-line><p class=motto style="color:#333">"the only delusion is that nibbana cannot be attained in this very moment"</p></div></div>
 <div id=wrap><div id=nav>
 <a href="/chat">chat</a><br><a href="/vis">vis</a><br><a href="https://body.stonedoorway.com/lab" style="text-decoration:underline">body</a><br><br>
-<button class=daybox onclick="t('k1')">1</button><div id="k1"><a href="#" data-show="d1-e0">diary</a><br><a href="#" data-show="d1-s0">essay</a><br>diary <a href="uploads/1793262126825-current tensions">1793262126825-current tensions</a></div><p><a href="#" onclick="up(1);return false">+</a></p>
-<button class=daybox onclick="t('k2')">2</button><div id="k2">essay <a href="uploads/1793263255797-up-probe.txt">1793263255797-up-probe.txt</a></div><p><a href="#" onclick="up(2);return false">+</a></p>
+<button class=daybox onclick="t('k1')">1</button><div id="k1"><a href="#" data-show="d1-e0">diary</a><br><a href="#" data-show="d1-s0">essay</a></div><p><a href="#" onclick="up(1);return false">+</a></p>
+<button class=daybox onclick="t('k2')">2</button><div id="k2"></div><p><a href="#" onclick="up(2);return false">+</a></p>
 </div><div id=main><div data-blk="d1-e0"><span id="d1-e0"></span><pre class="blk" data-f="entries/day-01-attaining-nibbana.md" data-raw="# Day 1 of attaining nibbana
 
 ## Current tensions
@@ -215,16 +215,18 @@ No resolution yet. Named and logged.</pre></div></div>
 function up(day){
   var i=document.createElement('input');
   i.type='file';
+  i.style.display='none';
+  document.body.appendChild(i);
   i.onchange=function(){
-    if(!this.files.length)return;
+    if(!this.files.length){i.remove();return;}
     var f=this.files[0];
-    var isText=/\.(md|txt)$/i.test(f.name);
+    i.remove();
     var box=document.createElement('div');
     var lab=document.createElement('p');
-    lab.textContent=f.name+(isText?' — pick a kind:':'');
+    lab.textContent=f.name+' — pick a kind:';
     box.appendChild(lab);
     var sel=null;
-    if(isText){
+    {
       sel=document.createElement('select');
       ['diary','essay','poem'].forEach(function(k){
         var o=document.createElement('option');o.value=k;o.textContent=k;
@@ -255,6 +257,7 @@ function up(day){
     };
     document.getElementById('nav').appendChild(box);
   };
+  i.oncancel=function(){ i.remove(); };
   i.click();
 }
 
