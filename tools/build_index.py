@@ -191,6 +191,22 @@ def collect():
                               "url": f"tomnotes/{name}",
                               "themes": [],
                               "text": ch[:2000]})
+    # 4d. trika corpus (mantra-body texts; kind=trika -> lineage tier, see trika/README)
+    TRIKA = ROOT / "trika" / "passages"
+    if TRIKA.is_dir():
+        for tp in sorted(TRIKA.glob("*.md")):
+            text = tp.read_text(encoding="utf-8", errors="ignore").strip()
+            if len(text) < 40:
+                continue
+            first = text.splitlines()[0].lstrip("# ").strip() if text else tp.stem
+            first = first.replace("Trika passage: ", "")
+            for chi, ch in enumerate(chunk_text(text)):
+                items.append({"id": f"trika:{tp.stem}:{chi}",
+                              "kind": "trika",
+                              "label": f"Trika: {first}"[:90],
+                              "url": "",
+                              "themes": ["Trika", "Kashmir Shaivism"],
+                              "text": ch[:2000]})
     # 5. own bank: tomnotes diaries, essays, prior chats (your words first)
     from ingest_hxrmxs import collect_hxrmxs
     for it in collect_hxrmxs():

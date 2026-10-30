@@ -148,7 +148,7 @@ async function matchPassages(env, query, k = 5) {
   }
   let qn = Math.sqrt(q.reduce((s2, x) => s2 + x * x, 0)) || 1e-9;
   for (let i = 0; i < q.length; i++) q[i] /= qn;
-  const BOOST = { "own-tension": 1.35, "canon": 1.2, "teacher-answer": 1.2, "forum-answer": 1.15 };
+  const BOOST = { "own-tension": 1.35, "canon": 1.2, "trika": 1.2, "teacher-answer": 1.2, "forum-answer": 1.15 };
   const raw = {};
   const scored = [];
   for (const item of items) {
@@ -215,10 +215,10 @@ async function matchPassages(env, query, k = 5) {
     if (k === "own-tension") return "anchor";
     if (k === "lived-log" || k === "forum-answer") return "lived";
     if (k === "dialogue") return "dialogue";
-    if (k === "canon" || k === "roots-doc" || k === "graph" || k === "teacher-answer") return "lineage";
+    if (k === "canon" || k === "trika" || k === "roots-doc" || k === "graph" || k === "teacher-answer") return "lineage";
     return "ownpast";
   };
-  const slots = { anchor: 1, lived: 3, dialogue: 2, lineage: 1, ownpast: 1 };
+  const slots = { anchor: 1, lived: 3, dialogue: 2, lineage: 2, ownpast: 1 };
   const seen = new Set();
   const out = [];
   for (const [rrs, pri, c] of ranked) {

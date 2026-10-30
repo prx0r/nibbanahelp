@@ -237,7 +237,8 @@ class H(BaseHTTPRequestHandler):
                 _rawmap = { _items[int(_i)]["id"]: float(_raw[int(_i)]) for _i in range(len(_items)) }
                 # own words first: diary, then past chats/notes, then others
                 _BOOST = {"own-tension": 1.35, "canon": 1.2,
-                          "teacher-answer": 1.2, "forum-answer": 1.15}
+                          "trika": 1.2, "teacher-answer": 1.2,
+                          "forum-answer": 1.15}
                 _sc = _raw.copy()
                 for _ii, _it in enumerate(_items):
                     _sc[_ii] *= _BOOST.get(_it.get("kind"), 1.0)
@@ -295,7 +296,7 @@ class H(BaseHTTPRequestHandler):
                         return "lived"
                     if k == "dialogue":
                         return "dialogue"
-                    if k in ("canon", "roots-doc", "teacher-answer"):
+                    if k in ("canon", "trika", "roots-doc", "teacher-answer"):
                         return "lineage"
                     return "ownpast"
                 _ranked = sorted(
@@ -303,7 +304,7 @@ class H(BaseHTTPRequestHandler):
                       0 if _BOOST.get(_cands[i].get("kind"), 1.0) > 1 else 1,
                       _cands[i]) for _s, i in _rrpairs),
                     key=lambda x: (x[1], -x[0]))
-                _slots = {"anchor": 1, "lived": 3, "lineage": 1, "ownpast": 1,
+                _slots = {"anchor": 1, "lived": 3, "lineage": 2, "ownpast": 1,
                              "dialogue": 2}
                 _seen, relay, sources = set(), [], []
                 for _rrs, _pri, _c in _ranked:
