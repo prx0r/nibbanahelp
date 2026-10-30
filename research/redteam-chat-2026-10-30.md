@@ -80,6 +80,20 @@ session.
 5. **F5 probe:** dump raw cosine for lived-log candidates on rt03 query before
    tuning — know the number before moving gates.
 
+## Round-2 diagnostics (2026-10-30, offline — tools/redteam_scores.py)
+
+**Root cause of F2/F5 discovered: the reranker gate is dead.** Measured cosines are
+EXCELLENT (trika tops the whole index at 0.52–0.61 on rt05/rt10; lived-logs 0.47–0.51
+on rt03) but bge-reranker scores come back ≈0.000–0.01 for near-everything (colloquial
+query vs notes: cross-encoder wants near-entailment) — so `rrs < 0.12` silently drops
+cosine-perfect matches, leaving only anchor (exempt), graph (exempt), videos (ungated)
+and lucky verbatim hits. F3 anchor numbers: legit anchors 0.72–0.84 vs hijacks
+0.41–0.43 → an anchor gate at ~0.45 separates them cleanly. Off-topic worst case
+(rt07 pizza): 0.38 → a global raise of the cosine floor toward ~0.40 would also
+defuse F4-ish junk sources. Open next: replace the .12 rerank GATE with pure ordering
+(rerank as ranker, cosine floor as the gate), anchor floor .45, floor .40 for
+non-own kinds.
+
 ## Remediation applied same session
 
 **F1 FIXED** (entries/ + essays/ → kind `own-diary`, ownpast tier, BOOST 1.35 —
